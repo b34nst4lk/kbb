@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Daily Logs — KBB{% endblock %}
+{% block content %}
+<h1>Daily Logs</h1>
+
+<div class="form-group">
+    <label for="log-date">View logs for date:</label>
+    <input type="date" id="log-date" value="{{ date_str }}"
+           hx-get="/partials/logs"
+           hx-target="#log-list"
+           hx-swap="innerHTML"
+           hx-params="date"
+           name="date">
+</div>
+
+<div id="log-list">
+    {% if logs %}
+    {% for log in logs %}
+    {% include "partials/daily_log_card.html" %}
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>No logs for {{ date_str }}.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

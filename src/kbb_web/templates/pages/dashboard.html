@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — KBB{% endblock %}
+{% block content %}
+<h1>Knowledge Base Builder</h1>
+
+<div class="status-grid">
+    <div class="status-item">
+        <div class="status-value">{{ profile_name or "—" }}</div>
+        <div class="status-label">Profile</div>
+    </div>
+    <div class="status-item">
+        <div class="status-value">{{ knowledge_count }}</div>
+        <div class="status-label">Knowledge Entries</div>
+    </div>
+    <div class="status-item">
+        <div class="status-value">{{ log_count }}</div>
+        <div class="status-label">Daily Logs</div>
+    </div>
+    <div class="status-item">
+        <div class="status-value">{{ "Yes" if pending_question else "No" }}</div>
+        <div class="status-label">Pending Question</div>
+    </div>
+</div>
+
+{% if pending_question %}
+<div class="card">
+    <div class="card-header">Pending Question</div>
+    <p><strong>{{ pending_question.text }}</strong></p>
+    <p class="list-item-meta">Topic: {{ pending_question.topic.value }} — {{ pending_question.rationale }}</p>
+    <div class="form-actions">
+        <a href="/daily" class="btn btn-primary">Answer Now</a>
+    </div>
+</div>
+{% elif not profile_name %}
+<div class="card">
+    <div class="card-header">Get Started</div>
+    <p class="list-item-meta">Set up your profile to start building your knowledge base.</p>
+    <div class="form-actions">
+        <a href="/profile" class="btn btn-primary">Set Up Profile</a>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-header">Next Step</div>
+    <p class="list-item-meta">Generate a question to extract knowledge from your experience.</p>
+    <div class="form-actions">
+        <a href="/daily" class="btn btn-primary">Daily Question</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

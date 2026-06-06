@@ -1,0 +1,10 @@
+<div class="card">
+    <div class="card-header">Daily Log — {{ log.log_timestamp.strftime('%Y-%m-%d %H:%M') }}</div>
+    <p><strong>Question</strong> <span class="badge">{{ log.question_topic.value }}</span></p>
+    <p>{{ log.question }}</p>
+    <p class="list-item-meta">{{ log.question_rationale }}</p>
+    <h3>Response</h3>
+    <div class="markdown-content">{{ log.response | markdown | safe }}</div>
+    <h3>Recorded Knowledge</h3>
+    <div class="markdown-content">{{ log.recorded_entry | markdown | safe }}</div>
+</div>

@@ -1,0 +1,13 @@
+<div class="alert alert-success">
+    Recorded! Your response has been saved as a knowledge entry.
+</div>
+{% if log %}
+<div class="card">
+    <div class="card-header">Recorded Knowledge</div>
+    <div class="markdown-content">{{ log.recorded_entry | markdown | safe }}</div>
+</div>
+{% endif %}
+<div class="form-actions">
+    <a href="/daily" class="btn">Answer Another Question</a>
+    <a href="/daily/logs/{{ date_str }}" class="btn">View Today's Logs</a>
+</div>

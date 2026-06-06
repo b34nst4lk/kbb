@@ -20,17 +20,21 @@ class MockProvider:
     def name(self) -> str:
         return "mock"
 
-    async def complete(self, prompt: str, *, system: str = "") -> str:
+    async def complete(
+        self, prompt: str, *, system: str = "", json_schema: dict | None = None
+    ) -> str:
         self._calls.append((system, prompt))
-        # Match on unique phrases from system prompts to avoid false positives
-        if "profile analyst" in system.lower():
+        # Match on unique phrases from system prompts to avoid false positives.
+        # Both profile and question prompts start with "precise JSON generator",
+        # so we match on the distinguishing second phrase.
+        if "self-description" in system.lower() or "profile analyst" in system.lower():
             return self._responses.get(
                 "profile",
                 '{"name": "Test User", "education": ["BS Computer Science"], '
                 '"work_experience": ["Software Engineer at TestCo"], '
                 '"life_experience": [], "interests": ["Python", "AI"]}',
             )
-        if "knowledge extraction coach" in system.lower():
+        if "knowledge extraction" in system.lower() or "knowledge extraction coach" in system.lower():
             return self._responses.get(
                 "question",
                 '{"text": "What testing strategy do you prefer?", '

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Import Knowledge — KBB{% endblock %}
+{% block content %}
+<h1>Import Knowledge</h1>
+
+<div class="card">
+    <form hx-post="/partials/knowledge/import"
+          hx-target="#import-result"
+          hx-swap="innerHTML"
+          hx-indicator="#import-spinner">
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" name="title" id="title" required placeholder="e.g. My Testing Philosophy">
+        </div>
+        <div class="form-group">
+            <label for="topic">Topic</label>
+            <select name="topic" id="topic">
+                <option value="general">General</option>
+                <option value="education">Education</option>
+                <option value="work_experience">Work Experience</option>
+                <option value="life_experience">Life Experience</option>
+                <option value="skill">Skill</option>
+                <option value="opinion">Opinion</option>
+                <option value="decision">Decision</option>
+                <option value="process">Process</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="content">Content</label>
+            <textarea name="content" id="content" rows="10" required placeholder="Write or paste knowledge here..."></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Import</button>
+            <span id="import-spinner" class="htmx-indicator">Importing...</span>
+            <a href="/knowledge" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div id="import-result"></div>
+{% endblock %}

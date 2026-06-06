@@ -1,23 +1,63 @@
-"""All prompt templates for LLM interactions.
+"""All prompt templates and JSON schemas for LLM interactions.
 
 Keeping prompts in one place makes them easy to review and iterate on.
+JSON schemas are used by Ollama's guided decoding to force valid output.
 """
 
-UNDERSTAND_PROFILE_SYSTEM = """You are a profile analyst. Given a user's freeform \
-self-description, extract structured information. Return a JSON object with these \
-fields: name (string), education (list of strings), work_experience (list of strings), \
-life_experience (list of strings), interests (list of strings). Only include \
-information explicitly stated by the user. Do not infer or add anything."""
+# --- JSON Schemas for guided decoding ---
+
+PROFILE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "education": {"type": "array", "items": {"type": "string"}},
+        "work_experience": {"type": "array", "items": {"type": "string"}},
+        "life_experience": {"type": "array", "items": {"type": "string"}},
+        "interests": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["name", "education", "work_experience", "life_experience", "interests"],
+}
+
+QUESTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "text": {"type": "string"},
+        "topic": {
+            "type": "string",
+            "enum": [
+                "education",
+                "work_experience",
+                "life_experience",
+                "skill",
+                "opinion",
+                "decision",
+                "process",
+                "general",
+            ],
+        },
+        "rationale": {"type": "string"},
+    },
+    "required": ["text", "topic", "rationale"],
+}
+
+# --- Prompt templates ---
+
+UNDERSTAND_PROFILE_SYSTEM = """You are a precise JSON generator. Given a user's freeform \
+self-description, extract structured information. Respond ONLY with a valid JSON object \
+matching this schema: {"name": string, "education": [string], "work_experience": [string], \
+"life_experience": [string], "interests": [string]}. Do not include conversational text, \
+markdown formatting, or anything outside the JSON object. Only include information \
+explicitly stated by the user. Do not infer or add anything."""
 
 UNDERSTAND_PROFILE_PROMPT = """Here is the user's profile:
 ---
 {profile_text}
 ---
-Extract the structured information as described. Return only valid JSON."""
+Extract the structured information as described. Return only the JSON object."""
 
-GENERATE_QUESTION_SYSTEM = """You are a knowledge extraction coach. Your job is to \
-ask ONE question that will reveal knowledge the user has, based on their background \
-but NOT already documented in their knowledge base.
+GENERATE_QUESTION_SYSTEM = """You are a precise JSON generator and knowledge extraction \
+coach. Your job is to ask ONE question that will reveal knowledge the user has, based on \
+their background but NOT already documented in their knowledge base.
 
 Guidelines:
 - The question should draw on the user's specific expertise or experience
@@ -28,11 +68,9 @@ Guidelines:
 - Choose a topic that best fits the question from: education, work_experience, \
 life_experience, skill, opinion, decision, process, general
 
-You must return a JSON object with exactly these fields:
-  "text": the question text (string),
-  "topic": one of [education, work_experience, life_experience, skill, opinion, \
-decision, process, general],
-  "rationale": brief explanation of why this question was chosen (string)"""
+Respond ONLY with a valid JSON object matching this schema: \
+{{"text": string, "topic": string, "rationale": string}}. Do not include \
+conversational text, markdown formatting, or anything outside the JSON object."""
 
 GENERATE_QUESTION_PROMPT = """## User Profile
 {profile_summary}
@@ -43,8 +81,8 @@ GENERATE_QUESTION_PROMPT = """## User Profile
 ## Recent Questions (avoid repeating these)
 {recent_questions}
 
-Generate a question that would extract new knowledge from this user. Return only \
-valid JSON."""
+Generate a question that would extract new knowledge from this user. Return only the \
+JSON object."""
 
 RECORD_RESPONSE_SYSTEM = """You are a knowledge recorder. Your job is to take a \
 user's response to a question and turn it into a clean, well-structured knowledge \

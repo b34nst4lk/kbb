@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Settings — KBB{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+
+<div class="card">
+    <div class="card-header">Configuration</div>
+    {% if config_file_path %}
+    <p class="list-item-meta">Config file: {{ config_file_path }}</p>
+    {% else %}
+    <p class="list-item-meta">No config file found. Using defaults and environment variables.</p>
+    {% endif %}
+</div>
+
+<div id="settings-area">
+    <form hx-post="/partials/settings"
+          hx-target="#settings-area"
+          hx-swap="innerHTML"
+          class="card">
+        <div class="form-group">
+            <label for="data_dir">Data Directory</label>
+            <input type="text" name="data_dir" id="data_dir" value="{{ web_config.data_dir }}">
+        </div>
+        <div class="form-group">
+            <label for="llm_provider">LLM Provider</label>
+            <select name="llm_provider" id="llm_provider">
+                {% for p in providers %}
+                <option value="{{ p }}" {% if p == web_config.llm_provider.value %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="llm_model">LLM Model</label>
+            <input type="text" name="llm_model" id="llm_model" value="{{ web_config.llm_model }}">
+        </div>
+        <div class="form-group">
+            <label for="llm_base_url">LLM Base URL <span class="list-item-meta">(for Ollama / custom endpoints)</span></label>
+            <input type="text" name="llm_base_url" id="llm_base_url" value="{{ web_config.llm_base_url }}" placeholder="http://localhost:11434/v1">
+        </div>
+        <div class="form-group">
+            <label for="daily_log_time">Daily Log Time</label>
+            <input type="text" name="daily_log_time" id="daily_log_time" value="{{ web_config.daily_log_time }}" placeholder="09:00">
+        </div>
+        <div class="form-group">
+            <label for="port">Web Port</label>
+            <input type="text" name="port" id="port" value="{{ web_config.port }}">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

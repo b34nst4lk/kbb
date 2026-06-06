@@ -38,18 +38,29 @@ class OpenAIProvider:
             return f"openai-compatible/{self._model} ({self._base_url})"
         return f"openai/{self._model}"
 
-    async def complete(self, prompt: str, *, system: str = "") -> str:
-        """Single completion. Returns the full response text."""
+    async def complete(
+        self, prompt: str, *, system: str = "", json_schema: dict | None = None
+    ) -> str:
+        """Single completion. Returns the full response text.
+
+        When json_schema is provided, uses response_format to request
+        JSON output (OpenAI doesn't support schema-guided decoding,
+        but json_object mode improves reliability).
+        """
         messages = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        response = await self._client.chat.completions.create(
-            model=self._model,
-            max_tokens=4096,
-            messages=messages,
-        )
+        kwargs: dict = {
+            "model": self._model,
+            "max_tokens": 4096,
+            "messages": messages,
+        }
+        if json_schema:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        response = await self._client.chat.completions.create(**kwargs)
         return response.choices[0].message.content or ""
 
     async def stream(self, prompt: str, *, system: str = "") -> AsyncIterator[str]:

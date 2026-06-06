@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Knowledge Base Builder{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/kbb.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <script src="/static/js/kbb.js"></script>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">KBB</a>
+        <a href="/daily" class="nav-link">Daily</a>
+        <a href="/knowledge" class="nav-link">Knowledge</a>
+        <a href="/profile" class="nav-link">Profile</a>
+        <a href="/settings" class="nav-link">Settings</a>
+    </nav>
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+    <footer class="footer">
+        Knowledge Base Builder
+    </footer>
+</body>
+</html>

@@ -328,12 +328,12 @@ def daily_respond() -> None:
     # Record the response
     try:
         with console.status("[bold green]Recording your response...[/bold green]"):
-            log = asyncio.run(engine.record_response(question, cleaned_response))
+            asyncio.run(engine.record_response(question, cleaned_response))
     except KeyboardInterrupt:
         console.print("\n[yellow]Cancelled.[/yellow]")
         raise typer.Exit(1)
 
-    console.print(f"\n[green]Recorded! Log saved.[/green]")
+    console.print("\n[green]Recorded! Log saved.[/green]")
 
 
 @app.command(name="daily-log")
@@ -375,7 +375,7 @@ def status() -> None:
     console.print(f"  Daily logs: {len(logs)}")
     if pending:
         console.print(f"\n  [bold]Pending question:[/bold] {pending.text}")
-        console.print(f"  [dim]Run 'kbb daily-respond' to answer it.[/dim]")
+        console.print("  [dim]Run 'kbb daily-respond' to answer it.[/dim]")
 
 
 if __name__ == "__main__":

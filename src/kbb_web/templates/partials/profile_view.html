@@ -1,0 +1,42 @@
+{% if success %}
+<div class="alert alert-success">Profile saved.</div>
+{% endif %}
+
+{% if raw_profile %}
+<div class="card">
+    <div class="card-header">Profile</div>
+    <div class="markdown-content">{{ raw_profile | markdown | safe }}</div>
+    <div class="form-actions">
+        <button hx-get="/partials/profile-editor"
+                hx-target="#profile-area"
+                hx-swap="innerHTML"
+                class="btn">Edit Profile</button>
+        <button hx-post="/partials/profile-refresh"
+                hx-target="#profile-area"
+                hx-swap="innerHTML"
+                hx-indicator="#refresh-spinner"
+                class="btn">Refresh Structured View</button>
+        <span id="refresh-spinner" class="htmx-indicator">Refreshing...</span>
+    </div>
+</div>
+
+{% if profile and (profile.name or profile.education or profile.work_experience or profile.life_experience or profile.interests) %}
+<div class="card">
+    <div class="card-header">Structured Data</div>
+    {% if profile.name %}<p><strong>Name:</strong> {{ profile.name }}</p>{% endif %}
+    {% if profile.education %}<p><strong>Education:</strong> {{ profile.education | join(', ') }}</p>{% endif %}
+    {% if profile.work_experience %}<p><strong>Work:</strong> {{ profile.work_experience | join(', ') }}</p>{% endif %}
+    {% if profile.life_experience %}<p><strong>Life:</strong> {{ profile.life_experience | join(', ') }}</p>{% endif %}
+    {% if profile.interests %}<p><strong>Interests:</strong> {{ profile.interests | join(', ') }}</p>{% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <p>No profile yet. Tell the system about yourself to get personalized questions.</p>
+    <button hx-get="/partials/profile-editor"
+            hx-target="#profile-area"
+            hx-swap="innerHTML"
+            class="btn btn-primary">Set Up Profile</button>
+</div>
+{% endif %}

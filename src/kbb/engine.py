@@ -201,6 +201,10 @@ class KBPEngine:
         """List all knowledge entries."""
         return self._store.list_knowledge_entries()
 
+    def get_knowledge_entry(self, slug: str) -> KnowledgeEntry | None:
+        """Find a single knowledge entry by slug."""
+        return self._store.find_knowledge_entry(slug)
+
     def get_all_daily_logs(self) -> list[Path]:
         """List all daily log file paths."""
         return self._store.list_daily_logs()

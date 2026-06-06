@@ -1,0 +1,25 @@
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">Edit Profile</div>
+    <form hx-post="/partials/profile"
+          hx-target="#profile-area"
+          hx-swap="innerHTML"
+          hx-indicator="#profile-spinner">
+        <div class="form-group">
+            <label for="raw_text">Write about your education, work experience, life experience, and interests.</label>
+            <textarea name="raw_text" id="raw_text" rows="14"
+                      placeholder="# My Profile&#10;&#10;Education: ...&#10;Work experience: ...&#10;Life experience: ...&#10;Interests: ...">{{ raw_profile }}</textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Profile</button>
+            <span id="profile-spinner" class="htmx-indicator">Structuring your profile...</span>
+            <button hx-get="/partials/profile-view"
+                    hx-target="#profile-area"
+                    hx-swap="innerHTML"
+                    class="btn">Cancel</button>
+        </div>
+    </form>
+</div>

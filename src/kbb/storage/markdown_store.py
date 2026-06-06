@@ -86,6 +86,22 @@ class MarkdownStore:
                     continue  # Skip malformed files
         return entries
 
+    def find_knowledge_entry(self, slug: str) -> KnowledgeEntry | None:
+        """Find a knowledge entry by its filename slug.
+
+        Searches across all topic directories.
+        """
+        knowledge_dir = self._data_dir / "knowledge"
+        if not knowledge_dir.exists():
+            return None
+        for topic_dir in knowledge_dir.iterdir():
+            if not topic_dir.is_dir():
+                continue
+            path = topic_dir / f"{slug}.md"
+            if path.exists():
+                return self._parse_knowledge_entry(path)
+        return None
+
     def write_knowledge_entry(self, entry: KnowledgeEntry) -> Path:
         """Write a knowledge entry to disk. Returns the file path."""
         topic_dir_name = self.TOPIC_DIRS.get(entry.topic, "general")

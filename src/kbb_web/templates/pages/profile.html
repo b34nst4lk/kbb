@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Profile — KBB{% endblock %}
+{% block content %}
+<h1>Your Profile</h1>
+
+<div id="profile-area">
+    {% with success=false %}
+    {% include "partials/profile_view.html" %}
+    {% endwith %}
+</div>
+{% endblock %}

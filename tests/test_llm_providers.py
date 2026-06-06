@@ -89,6 +89,52 @@ class TestParseJsonResponse:
         with pytest.raises(ValueError, match="Failed to parse"):
             LLMClient._parse_json_response("not json at all")
 
+    def test_truncated_json_auto_closed(self):
+        """Truncated JSON with missing closing braces should be auto-closed."""
+        truncated = '{"name": "Test", "education": ["BS"'
+        result = LLMClient._parse_json_response(truncated)
+        assert result["name"] == "Test"
+        assert result["education"] == ["BS"]
+
+    def test_truncated_json_missing_brace_and_bracket(self):
+        """Truncated JSON missing both } and ] should be auto-closed."""
+        truncated = '{"name": "Test", "items": ["a", "b"'
+        result = LLMClient._parse_json_response(truncated)
+        assert result["name"] == "Test"
+        assert result["items"] == ["a", "b"]
+
+    def test_nested_truncated_json(self):
+        """Nested truncated JSON should be auto-closed."""
+        truncated = '{"name": "Test", "data": {"key": "value"'
+        result = LLMClient._parse_json_response(truncated)
+        assert result["name"] == "Test"
+        assert result["data"]["key"] == "value"
+
+
+class TestTryCloseJson:
+    def test_balanced_json_returns_none(self):
+        assert LLMClient._try_close_json('{"name": "Test"}') is None
+
+    def test_missing_closing_brace(self):
+        result = LLMClient._try_close_json('{"name": "Test"')
+        assert result == '{"name": "Test"}'
+
+    def test_missing_closing_bracket_and_brace(self):
+        result = LLMClient._try_close_json('{"items": ["a"')
+        assert result == '{"items": ["a"]}'
+
+    def test_nested_missing_both(self):
+        result = LLMClient._try_close_json('{"data": {"key": "val"')
+        assert result == '{"data": {"key": "val"}}'
+
+    def test_string_with_braces_ignored(self):
+        result = LLMClient._try_close_json('{"text": "hello {world}"')
+        assert result == '{"text": "hello {world}"}'
+
+    def test_escaped_quotes_in_string(self):
+        result = LLMClient._try_close_json('{"text": "he said \\"hi\\""')
+        assert result == '{"text": "he said \\"hi\\""}'
+
 
 class TestCreateProvider:
     def test_unknown_provider_raises(self):
@@ -96,8 +142,6 @@ class TestCreateProvider:
             create_provider("unknown_provider", api_key="test", model="test")
 
     def test_anthropic_provider_name(self):
-        # We can't fully test this without the anthropic package installed,
-        # but we can test the import path
         try:
             provider = create_provider("anthropic", api_key="test-key", model="claude-sonnet-4-20250514")
             assert "anthropic" in provider.name
@@ -114,20 +158,30 @@ class TestCreateProvider:
     def test_ollama_provider_name(self):
         try:
             provider = create_provider("ollama", api_key="ollama", model="llama3")
-            assert "ollama" in provider.name or "openai-compatible" in provider.name
-            assert "localhost:11434" in provider.name
+            assert "ollama" in provider.name
         except ImportError:
-            pytest.skip("openai package not installed")
+            pytest.skip("ollama package not installed")
 
-    def test_ollama_with_custom_base_url(self):
+    def test_ollama_with_custom_host(self):
         try:
             provider = create_provider(
                 "ollama", api_key="ollama", model="llama3",
-                base_url="http://my-server:11434/v1",
+                base_url="http://my-server:11434",
             )
             assert "my-server" in provider.name
         except ImportError:
-            pytest.skip("openai package not installed")
+            pytest.skip("ollama package not installed")
+
+    def test_ollama_strips_v1_suffix(self):
+        """Old configs with /v1 suffix should be handled gracefully."""
+        try:
+            provider = create_provider(
+                "ollama", api_key="ollama", model="llama3",
+                base_url="http://localhost:11434/v1",
+            )
+            assert "localhost" in provider.name
+        except ImportError:
+            pytest.skip("ollama package not installed")
 
     def test_openai_with_custom_base_url(self):
         try:

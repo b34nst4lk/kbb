@@ -1,0 +1,5 @@
+<div class="list-item">
+    <span class="badge">{{ entry.topic.value }}</span>
+    <a href="/knowledge/{{ entry.slug }}" class="list-item-title">{{ entry.title }}</a>
+    <span class="list-item-meta">{{ entry.source }} · {{ entry.created_at or "unknown" }}</span>
+</div>

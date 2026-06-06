@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Knowledge — KBB{% endblock %}
+{% block content %}
+<h1>Knowledge Base</h1>
+
+<div class="form-actions" style="margin-bottom: 1.5rem;">
+    <a href="/knowledge/import" class="btn btn-primary">Import Knowledge</a>
+</div>
+
+<div id="knowledge-list">
+    {% if entries %}
+    {% for entry in entries %}
+    {% include "partials/knowledge_card.html" %}
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>No knowledge entries yet. Import a document or answer a daily question to start building your knowledge base.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

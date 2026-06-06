@@ -1,0 +1,9 @@
+{% if entries %}
+{% for entry in entries %}
+{% include "partials/knowledge_card.html" %}
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <p>No knowledge entries found.</p>
+</div>
+{% endif %}

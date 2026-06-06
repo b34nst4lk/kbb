@@ -1,0 +1,9 @@
+{% if logs %}
+{% for log in logs %}
+{% include "partials/daily_log_card.html" %}
+{% endfor %}
+{% else %}
+<div class="empty-state">
+    <p>No logs found for this date.</p>
+</div>
+{% endif %}

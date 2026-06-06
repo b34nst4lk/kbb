@@ -23,8 +23,14 @@ class AnthropicProvider:
     def name(self) -> str:
         return f"anthropic/{self._model}"
 
-    async def complete(self, prompt: str, *, system: str = "") -> str:
-        """Single completion. Returns the full response text."""
+    async def complete(
+        self, prompt: str, *, system: str = "", json_schema: dict | None = None
+    ) -> str:
+        """Single completion. Returns the full response text.
+
+        json_schema is accepted for API compatibility but not used
+        — Anthropic's API doesn't support guided decoding.
+        """
         kwargs: dict = {
             "model": self._model,
             "max_tokens": 4096,

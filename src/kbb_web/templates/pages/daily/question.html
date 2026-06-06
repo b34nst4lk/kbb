@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Daily — KBB{% endblock %}
+{% block content %}
+<h1>Daily Knowledge Extraction</h1>
+
+<div id="question-area">
+    {% if pending_question %}
+    {% with question=pending_question %}
+    {% include "partials/question_card.html" %}
+    {% endwith %}
+    {% else %}
+    <div class="card">
+        <div class="card-header">Today's Question</div>
+        <p class="list-item-meta">Generate a question tailored to your profile and existing knowledge.</p>
+        <div class="form-actions">
+            <button hx-get="/partials/question"
+                    hx-target="#question-area"
+                    hx-swap="innerHTML"
+                    hx-indicator="#question-spinner"
+                    class="btn btn-primary">Generate Question</button>
+            <span id="question-spinner" class="htmx-indicator">Generating question...</span>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

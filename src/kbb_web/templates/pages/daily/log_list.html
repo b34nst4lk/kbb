@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}All Logs — KBB{% endblock %}
+{% block content %}
+<h1>All Daily Logs</h1>
+
+<div id="log-list">
+    {% if log_paths %}
+    {% for path in log_paths %}
+    <div class="list-item">
+        <a href="/daily/logs/{{ path.stem[:10] }}" class="list-item-title">{{ path.stem }}</a>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+        <p>No daily logs yet. Answer a daily question to create your first log.</p>
+        <a href="/daily" class="btn btn-primary">Go to Daily</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

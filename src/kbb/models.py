@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
@@ -68,6 +69,12 @@ class KnowledgeEntry:
     source: str = "daily_log"  # "daily_log" or "import"
     created_at: date | None = None
     tags: list[str] = field(default_factory=list)
+
+    @property
+    def slug(self) -> str:
+        """URL-safe slug derived from the title."""
+        slug = re.sub(r"[^a-z0-9]+", "-", self.title.lower()).strip("-")
+        return slug[:80] if len(slug) > 80 else slug
 
 
 @dataclass
