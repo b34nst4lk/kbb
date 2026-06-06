@@ -20,8 +20,11 @@ router = APIRouter()
 
 
 @router.get("/")
-def dashboard(request: Request, engine: KBPEngine = Depends(get_engine),
-              templates: Environment = Depends(get_templates)):
+def dashboard(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     profile = engine.get_profile()
     entries = engine.get_knowledge_entries()
     log_paths = engine.get_all_daily_logs()
@@ -38,8 +41,11 @@ def dashboard(request: Request, engine: KBPEngine = Depends(get_engine),
 
 
 @router.get("/profile")
-def profile_page(request: Request, engine: KBPEngine = Depends(get_engine),
-                 templates: Environment = Depends(get_templates)):
+def profile_page(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     profile = engine.get_profile()
     raw_profile = engine.get_raw_profile()
     template = templates.get_template("pages/profile.html")
@@ -48,8 +54,11 @@ def profile_page(request: Request, engine: KBPEngine = Depends(get_engine),
 
 
 @router.get("/daily")
-def daily_question_page(request: Request, engine: KBPEngine = Depends(get_engine),
-                        templates: Environment = Depends(get_templates)):
+def daily_question_page(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     pending = engine.get_pending_question()
     template = templates.get_template("pages/daily/question.html")
     html = template.render(pending_question=pending)
@@ -57,8 +66,11 @@ def daily_question_page(request: Request, engine: KBPEngine = Depends(get_engine
 
 
 @router.get("/daily/logs")
-def daily_logs_list(request: Request, engine: KBPEngine = Depends(get_engine),
-                    templates: Environment = Depends(get_templates)):
+def daily_logs_list(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     log_paths = engine.get_all_daily_logs()
     template = templates.get_template("pages/daily/log_list.html")
     html = template.render(log_paths=log_paths)
@@ -66,9 +78,12 @@ def daily_logs_list(request: Request, engine: KBPEngine = Depends(get_engine),
 
 
 @router.get("/daily/logs/{date_str}")
-def daily_logs_by_date(request: Request, date_str: str,
-                       engine: KBPEngine = Depends(get_engine),
-                       templates: Environment = Depends(get_templates)):
+def daily_logs_by_date(
+    request: Request,
+    date_str: str,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     d = date.fromisoformat(date_str)
     logs = engine.find_daily_logs_by_date(d)
     template = templates.get_template("pages/daily/log.html")
@@ -77,8 +92,11 @@ def daily_logs_by_date(request: Request, date_str: str,
 
 
 @router.get("/knowledge")
-def knowledge_list(request: Request, engine: KBPEngine = Depends(get_engine),
-                   templates: Environment = Depends(get_templates)):
+def knowledge_list(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     entries = engine.get_knowledge_entries()
     template = templates.get_template("pages/knowledge/list.html")
     html = template.render(entries=entries)
@@ -93,9 +111,12 @@ def knowledge_import_form(request: Request, templates: Environment = Depends(get
 
 
 @router.get("/knowledge/{slug}")
-def knowledge_detail(request: Request, slug: str,
-                      engine: KBPEngine = Depends(get_engine),
-                      templates: Environment = Depends(get_templates)):
+def knowledge_detail(
+    request: Request,
+    slug: str,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     entry = engine.get_knowledge_entry(slug)
     if not entry:
         return HTMLResponse(content="Knowledge entry not found.", status_code=404)
@@ -105,9 +126,14 @@ def knowledge_detail(request: Request, slug: str,
 
 
 @router.get("/settings")
-def settings_page(request: Request, config: WebConfig = Depends(get_web_config),
-                  templates: Environment = Depends(get_templates)):
+def settings_page(
+    request: Request,
+    config: WebConfig = Depends(get_web_config),
+    templates: Environment = Depends(get_templates),
+):
     providers = [p.value for p in LLMProviderName]
     template = templates.get_template("pages/settings.html")
-    html = template.render(web_config=config, config_file_path=config.config_file_path, providers=providers)
+    html = template.render(
+        web_config=config, config_file_path=config.config_file_path, providers=providers
+    )
     return HTMLResponse(content=html)

@@ -143,7 +143,9 @@ class TestCreateProvider:
 
     def test_anthropic_provider_name(self):
         try:
-            provider = create_provider("anthropic", api_key="test-key", model="claude-sonnet-4-20250514")
+            provider = create_provider(
+                "anthropic", api_key="test-key", model="claude-sonnet-4-20250514"
+            )
             assert "anthropic" in provider.name
         except ImportError:
             pytest.skip("anthropic package not installed")
@@ -165,7 +167,9 @@ class TestCreateProvider:
     def test_ollama_with_custom_host(self):
         try:
             provider = create_provider(
-                "ollama", api_key="ollama", model="llama3",
+                "ollama",
+                api_key="ollama",
+                model="llama3",
                 base_url="http://my-server:11434",
             )
             assert "my-server" in provider.name
@@ -176,7 +180,9 @@ class TestCreateProvider:
         """Old configs with /v1 suffix should be handled gracefully."""
         try:
             provider = create_provider(
-                "ollama", api_key="ollama", model="llama3",
+                "ollama",
+                api_key="ollama",
+                model="llama3",
                 base_url="http://localhost:11434/v1",
             )
             assert "localhost" in provider.name
@@ -186,7 +192,9 @@ class TestCreateProvider:
     def test_openai_with_custom_base_url(self):
         try:
             provider = create_provider(
-                "openai", api_key="test-key", model="gpt-4o",
+                "openai",
+                api_key="test-key",
+                model="gpt-4o",
                 base_url="https://my-proxy.example.com/v1",
             )
             assert "my-proxy" in provider.name

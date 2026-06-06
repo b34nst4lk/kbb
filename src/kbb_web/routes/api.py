@@ -123,8 +123,7 @@ def api_get_profile(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.post("/profile")
-async def api_create_profile(body: ProfileCreateRequest,
-                             engine: KBPEngine = Depends(get_engine)):
+async def api_create_profile(body: ProfileCreateRequest, engine: KBPEngine = Depends(get_engine)):
     profile = await engine.setup_profile_from_text(body.raw_text)
     return ProfileResponse(
         name=profile.name or "",
@@ -153,8 +152,9 @@ def api_list_knowledge(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.post("/knowledge")
-async def api_import_knowledge(body: KnowledgeImportRequest,
-                               engine: KBPEngine = Depends(get_engine)):
+async def api_import_knowledge(
+    body: KnowledgeImportRequest, engine: KBPEngine = Depends(get_engine)
+):
     entry = await engine.import_knowledge_from_text(
         title=body.title,
         content=body.content,
@@ -185,8 +185,7 @@ async def api_get_question(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.post("/daily/response")
-async def api_record_response(body: ResponseCreateRequest,
-                              engine: KBPEngine = Depends(get_engine)):
+async def api_record_response(body: ResponseCreateRequest, engine: KBPEngine = Depends(get_engine)):
     from kbb.models import Question
 
     question = Question(
@@ -207,8 +206,9 @@ async def api_record_response(body: ResponseCreateRequest,
 
 
 @router.get("/daily/logs")
-def api_list_logs(date_str: str = Query(None, alias="date"),
-                  engine: KBPEngine = Depends(get_engine)):
+def api_list_logs(
+    date_str: str = Query(None, alias="date"), engine: KBPEngine = Depends(get_engine)
+):
     if date_str:
         d = date.fromisoformat(date_str)
     else:

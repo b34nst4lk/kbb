@@ -18,7 +18,9 @@ class TestProfile:
         result = mock_store.read_profile()
         assert result == ""
 
-    def test_write_and_read_structured_profile(self, mock_store: MarkdownStore, sample_profile: UserProfile):
+    def test_write_and_read_structured_profile(
+        self, mock_store: MarkdownStore, sample_profile: UserProfile
+    ):
         mock_store.write_structured_profile(sample_profile)
         result = mock_store.read_structured_profile()
         assert result.name == sample_profile.name

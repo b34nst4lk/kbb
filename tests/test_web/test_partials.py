@@ -103,6 +103,7 @@ class TestGlobalExceptionHandler:
 
     def test_htmx_error_returns_200(self, web_app):
         from starlette.testclient import TestClient
+
         # Force an error by accessing a route that will fail
         client = TestClient(web_app)
         # Generate question without a profile — should return error with 200 for HTMX

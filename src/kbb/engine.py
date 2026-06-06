@@ -32,9 +32,7 @@ class KBPEngine:
     def __init__(self, config: KBBConfig) -> None:
         self._config = config
         if config.data_dir is None:
-            raise ValueError(
-                "Data directory is required. Set KBB_DATA_DIR or use --data-dir."
-            )
+            raise ValueError("Data directory is required. Set KBB_DATA_DIR or use --data-dir.")
         self._store = MarkdownStore(config.data_dir)
         provider = create_provider(
             config.llm_provider.value,
@@ -105,8 +103,7 @@ class KBPEngine:
         profile = self._store.read_structured_profile()
         if not profile or not profile.raw_markdown:
             raise ValueError(
-                "No profile found. Run 'kbb profile-setup' first "
-                "or edit data/profile.md directly."
+                "No profile found. Run 'kbb profile-setup' first or edit data/profile.md directly."
             )
 
         knowledge_entries = self._store.list_knowledge_entries()

@@ -43,6 +43,7 @@ def main():
     for _ in range(50):  # wait up to 5 seconds
         try:
             import urllib.request
+
             urllib.request.urlopen(url)
             break
         except Exception:

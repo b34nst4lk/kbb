@@ -61,8 +61,7 @@ def _get_engine() -> KBPEngine:
         provider = LLMProviderName(provider_str)
     except ValueError:
         console.print(
-            f"[red]Unknown provider '{provider_str}'. "
-            f"Supported: anthropic, openai, ollama.[/red]"
+            f"[red]Unknown provider '{provider_str}'. Supported: anthropic, openai, ollama.[/red]"
         )
         raise typer.Exit(1)
 
@@ -77,7 +76,9 @@ def _get_engine() -> KBPEngine:
         data_dir=data_dir,
         llm_provider=provider,
         llm_model=os.getenv("KBB_LLM_MODEL", default_models.get(provider, "gpt-4o")),
-        llm_api_key=os.getenv("KBB_API_KEY", os.getenv("ANTHROPIC_API_KEY", os.getenv("OPENAI_API_KEY", ""))),
+        llm_api_key=os.getenv(
+            "KBB_API_KEY", os.getenv("ANTHROPIC_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+        ),
         llm_base_url=os.getenv("KBB_LLM_BASE_URL", ""),
     )
     return KBPEngine(config)
@@ -96,7 +97,9 @@ def init() -> None:
     console.print("  1. Set [bold]KBB_API_KEY[/bold] (or ANTHROPIC_API_KEY / OPENAI_API_KEY)")
     console.print("  2. Run [bold]kbb profile-setup[/bold] to tell the system about yourself")
     console.print("  3. Run [bold]kbb daily-respond[/bold] each day to extract knowledge")
-    console.print("\n[dim]To use Ollama: set KBB_LLM_PROVIDER=ollama and KBB_LLM_MODEL=<model>[/dim]")
+    console.print(
+        "\n[dim]To use Ollama: set KBB_LLM_PROVIDER=ollama and KBB_LLM_MODEL=<model>[/dim]"
+    )
 
 
 # --- Profile commands ---
@@ -117,11 +120,12 @@ def profile_setup() -> None:
         name = ""
 
     console.print(
-        "\nWrite freely about your education, "
-        "work experience, life experience, and interests.\n"
+        "\nWrite freely about your education, work experience, life experience, and interests.\n"
     )
     data_dir = _state.get("data_dir", "data")
-    console.print(f"[dim]This will be saved to {data_dir}/profile.md. You can edit it anytime.[/dim]\n")
+    console.print(
+        f"[dim]This will be saved to {data_dir}/profile.md. You can edit it anytime.[/dim]\n"
+    )
 
     # Pre-fill editor with a structured template including the name
     template_lines = []
@@ -159,11 +163,14 @@ def profile_setup() -> None:
     if name and not profile.name:
         profile.name = name
         from kbb.storage.markdown_store import MarkdownStore
+
         store = MarkdownStore(engine._config.data_dir)
         store.write_structured_profile(profile)
 
     console.print(Panel(Markdown(engine.get_raw_profile()), title="Profile Saved"))
-    console.print(f"\n[green]Profile structured and saved: {profile.name or name or 'Unknown'}[/green]")
+    console.print(
+        f"\n[green]Profile structured and saved: {profile.name or name or 'Unknown'}[/green]"
+    )
 
 
 @app.command(name="profile-show")
@@ -205,10 +212,7 @@ def knowledge_list() -> None:
         return
     console.print(f"[bold]Knowledge Entries ({len(entries)})[/bold]\n")
     for e in entries:
-        console.print(
-            f"  [{e.topic.value}] {e.title} "
-            f"[dim]({e.source}, {e.created_at})[/dim]"
-        )
+        console.print(f"  [{e.topic.value}] {e.title} [dim]({e.source}, {e.created_at})[/dim]")
 
 
 @app.command(name="knowledge-import")
@@ -307,22 +311,27 @@ def daily_respond() -> None:
 
     if not response:
         console.print("[yellow]Cancelled — no changes saved.[/yellow]")
-        console.print("[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]")
+        console.print(
+            "[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]"
+        )
         return
     if not response.strip():
         console.print("[yellow]No response provided. Skipping.[/yellow]")
-        console.print("[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]")
+        console.print(
+            "[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]"
+        )
         return
 
     # Strip comment lines from the response before recording
     cleaned_response = "\n".join(
-        line for line in response.strip().split("\n")
-        if not line.strip().startswith("#")
+        line for line in response.strip().split("\n") if not line.strip().startswith("#")
     ).strip()
 
     if not cleaned_response:
         console.print("[yellow]No response content after removing comments. Skipping.[/yellow]")
-        console.print("[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]")
+        console.print(
+            "[dim]The question has been saved. Run [bold]kbb daily-respond[/bold] again to answer it.[/dim]"
+        )
         return
 
     # Record the response
@@ -370,7 +379,9 @@ def status() -> None:
 
     console.print("[bold]Knowledge Base Status[/bold]\n")
     console.print(f"  Data dir: {engine._config.data_dir}")
-    console.print(f"  Profile: {'Set (' + profile.name + ')' if profile.name else 'Not configured'}")
+    console.print(
+        f"  Profile: {'Set (' + profile.name + ')' if profile.name else 'Not configured'}"
+    )
     console.print(f"  Knowledge entries: {len(entries)}")
     console.print(f"  Daily logs: {len(logs)}")
     if pending:

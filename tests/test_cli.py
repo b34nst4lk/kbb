@@ -42,6 +42,8 @@ class TestDailyLog:
 
 class TestKnowledgeList:
     def test_knowledge_list_empty(self, tmp_path):
-        result = runner.invoke(app, ["knowledge-list"], env={"KBB_DATA_DIR": str(tmp_path / "data")})
+        result = runner.invoke(
+            app, ["knowledge-list"], env={"KBB_DATA_DIR": str(tmp_path / "data")}
+        )
         assert result.exit_code == 0
         assert "No knowledge entries" in result.output

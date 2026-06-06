@@ -34,7 +34,10 @@ class MockProvider:
                 '"work_experience": ["Software Engineer at TestCo"], '
                 '"life_experience": [], "interests": ["Python", "AI"]}',
             )
-        if "knowledge extraction" in system.lower() or "knowledge extraction coach" in system.lower():
+        if (
+            "knowledge extraction" in system.lower()
+            or "knowledge extraction coach" in system.lower()
+        ):
             return self._responses.get(
                 "question",
                 '{"text": "What testing strategy do you prefer?", '

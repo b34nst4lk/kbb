@@ -127,7 +127,7 @@ class LLMClient:
         prompt = GENERATE_SLUG_PROMPT.format(question=question, response=response_summary)
         result = await self._provider.complete(prompt, system=GENERATE_SLUG_SYSTEM)
         # Clean up: strip quotes, whitespace, and ensure lowercase hyphenated
-        slug = result.strip().strip('"\'').lower()
+        slug = result.strip().strip("\"'").lower()
         # Remove any non-alphanumeric characters except hyphens
         slug = re.sub(r"[^a-z0-9-]", "", slug)
         slug = re.sub(r"-+", "-", slug).strip("-")
@@ -244,7 +244,8 @@ def create_provider(
             from kbb.llm.openai_provider import OpenAIProvider
 
             return OpenAIProvider(
-                api_key=api_key, model=model,
+                api_key=api_key,
+                model=model,
                 base_url=base_url or None,
             )
         case "ollama":
@@ -258,6 +259,5 @@ def create_provider(
             return OllamaProvider(model=model, host=host)
         case _:
             raise ValueError(
-                f"Unknown LLM provider: {provider_type}. "
-                f"Supported: anthropic, openai, ollama"
+                f"Unknown LLM provider: {provider_type}. Supported: anthropic, openai, ollama"
             )

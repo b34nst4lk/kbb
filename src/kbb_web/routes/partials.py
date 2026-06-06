@@ -23,8 +23,11 @@ router = APIRouter()
 
 
 @router.get("/question")
-async def get_question(request: Request, engine: KBPEngine = Depends(get_engine),
-                       templates: Environment = Depends(get_templates)):
+async def get_question(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Generate or retrieve today's question."""
     pending = engine.get_pending_question()
     if pending:
@@ -48,13 +51,15 @@ async def get_question(request: Request, engine: KBPEngine = Depends(get_engine)
 
 
 @router.post("/response")
-async def record_response(request: Request,
-                          question_text: str = Form(...),
-                          question_topic: str = Form(...),
-                          question_rationale: str = Form(...),
-                          response: str = Form(...),
-                          engine: KBPEngine = Depends(get_engine),
-                          templates: Environment = Depends(get_templates)):
+async def record_response(
+    request: Request,
+    question_text: str = Form(...),
+    question_topic: str = Form(...),
+    question_rationale: str = Form(...),
+    response: str = Form(...),
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Record a response to a daily question."""
     question = Question(
         text=question_text,
@@ -73,8 +78,11 @@ async def record_response(request: Request,
 
 
 @router.get("/profile-editor")
-def profile_editor(request: Request, engine: KBPEngine = Depends(get_engine),
-                    templates: Environment = Depends(get_templates)):
+def profile_editor(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Return the inline profile editor partial."""
     raw_profile = engine.get_raw_profile()
     template = templates.get_template("partials/profile_editor.html")
@@ -83,8 +91,11 @@ def profile_editor(request: Request, engine: KBPEngine = Depends(get_engine),
 
 
 @router.get("/profile-view")
-def profile_view(request: Request, engine: KBPEngine = Depends(get_engine),
-                 templates: Environment = Depends(get_templates)):
+def profile_view(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Return the profile view partial (used by Cancel button in editor)."""
     profile = engine.get_profile()
     raw_profile = engine.get_raw_profile()
@@ -94,9 +105,12 @@ def profile_view(request: Request, engine: KBPEngine = Depends(get_engine),
 
 
 @router.post("/profile")
-async def save_profile(request: Request, raw_text: str = Form(...),
-                       engine: KBPEngine = Depends(get_engine),
-                       templates: Environment = Depends(get_templates)):
+async def save_profile(
+    request: Request,
+    raw_text: str = Form(...),
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Save profile text and return the profile view with success message."""
     try:
         profile = await engine.setup_profile_from_text(raw_text)
@@ -112,8 +126,11 @@ async def save_profile(request: Request, raw_text: str = Form(...),
 
 
 @router.post("/profile-refresh")
-async def refresh_profile(request: Request, engine: KBPEngine = Depends(get_engine),
-                          templates: Environment = Depends(get_templates)):
+async def refresh_profile(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Re-parse the profile via LLM."""
     try:
         profile = await engine.refresh_profile()
@@ -132,12 +149,14 @@ async def refresh_profile(request: Request, engine: KBPEngine = Depends(get_engi
 
 
 @router.post("/knowledge/import")
-async def import_knowledge(request: Request,
-                           title: str = Form(...),
-                           content: str = Form(...),
-                           topic: str = Form("general"),
-                           engine: KBPEngine = Depends(get_engine),
-                           templates: Environment = Depends(get_templates)):
+async def import_knowledge(
+    request: Request,
+    title: str = Form(...),
+    content: str = Form(...),
+    topic: str = Form("general"),
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Import knowledge from text input."""
     try:
         entry = await engine.import_knowledge_from_text(
@@ -155,8 +174,11 @@ async def import_knowledge(request: Request,
 
 
 @router.get("/knowledge")
-def knowledge_list_partial(request: Request, engine: KBPEngine = Depends(get_engine),
-                           templates: Environment = Depends(get_templates)):
+def knowledge_list_partial(
+    request: Request,
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Return knowledge list fragment."""
     entries = engine.get_knowledge_entries()
     template = templates.get_template("partials/knowledge_list.html")
@@ -165,11 +187,15 @@ def knowledge_list_partial(request: Request, engine: KBPEngine = Depends(get_eng
 
 
 @router.get("/logs")
-def logs_by_date(request: Request, date: str = "",
-                 engine: KBPEngine = Depends(get_engine),
-                 templates: Environment = Depends(get_templates)):
+def logs_by_date(
+    request: Request,
+    date: str = "",
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
     """Return daily logs for a date as a fragment."""
     from datetime import date as date_type
+
     if date:
         d = date_type.fromisoformat(date)
     else:
@@ -181,15 +207,17 @@ def logs_by_date(request: Request, date: str = "",
 
 
 @router.post("/settings")
-def save_settings(request: Request,
-                  data_dir: str = Form(...),
-                  llm_provider: str = Form(...),
-                  llm_model: str = Form(...),
-                  llm_base_url: str = Form(""),
-                  daily_log_time: str = Form("09:00"),
-                  port: str = Form("8199"),
-                  config: WebConfig = Depends(get_web_config),
-                  templates: Environment = Depends(get_templates)):
+def save_settings(
+    request: Request,
+    data_dir: str = Form(...),
+    llm_provider: str = Form(...),
+    llm_model: str = Form(...),
+    llm_base_url: str = Form(""),
+    daily_log_time: str = Form("09:00"),
+    port: str = Form("8199"),
+    config: WebConfig = Depends(get_web_config),
+    templates: Environment = Depends(get_templates),
+):
     """Save settings to config file."""
     config.data_dir = Path(data_dir).expanduser()
     if not config.data_dir.is_absolute():

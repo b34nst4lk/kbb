@@ -250,9 +250,7 @@ class MarkdownStore:
 
     # --- Knowledge Import ---
 
-    def import_markdown_file(
-        self, source_path: Path, topic: QuestionTopic
-    ) -> KnowledgeEntry:
+    def import_markdown_file(self, source_path: Path, topic: QuestionTopic) -> KnowledgeEntry:
         """Import an external markdown file as a knowledge entry."""
         content = source_path.read_text()
         entry = KnowledgeEntry(
@@ -391,9 +389,7 @@ class MarkdownStore:
                             pass
                     elif part.startswith("Tags:"):
                         tags = [
-                            t.strip()
-                            for t in part.split(":", 1)[1].strip().split(",")
-                            if t.strip()
+                            t.strip() for t in part.split(":", 1)[1].strip().split(",") if t.strip()
                         ]
                 break
 
@@ -509,4 +505,3 @@ class MarkdownStore:
             recorded_entry=recorded_entry,
             slug=slug,
         )
-
