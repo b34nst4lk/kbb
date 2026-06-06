@@ -158,7 +158,7 @@ class KBPEngine:
 
         # Also write the recorded entry as a knowledge entry
         entry = KnowledgeEntry(
-            title=f"{question.topic.value}: {question.text}",
+            title=slug,
             content=recorded_entry,
             topic=question.topic,
             source="daily_log",

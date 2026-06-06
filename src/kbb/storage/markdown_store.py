@@ -89,28 +89,58 @@ class MarkdownStore:
     def find_knowledge_entry(self, slug: str) -> KnowledgeEntry | None:
         """Find a knowledge entry by its filename slug.
 
-        Searches across all topic directories.
+        Searches across all topic directories. Matches exact slug first,
+        then falls back to date-suffixed variants (e.g. slug-2026-06-07.md).
+        Returns the most recent match.
         """
         knowledge_dir = self._data_dir / "knowledge"
         if not knowledge_dir.exists():
             return None
+        # Try exact match first
         for topic_dir in knowledge_dir.iterdir():
             if not topic_dir.is_dir():
                 continue
             path = topic_dir / f"{slug}.md"
             if path.exists():
                 return self._parse_knowledge_entry(path)
+        # Try date-suffixed match (most recent first)
+        for topic_dir in knowledge_dir.iterdir():
+            if not topic_dir.is_dir():
+                continue
+            matches = sorted(topic_dir.glob(f"{slug}-*.md"), reverse=True)
+            if matches:
+                return self._parse_knowledge_entry(matches[0])
         return None
 
     def write_knowledge_entry(self, entry: KnowledgeEntry) -> Path:
-        """Write a knowledge entry to disk. Returns the file path."""
+        """Write a knowledge entry to disk. Returns the file path.
+
+        If a file with the same slug already exists, appends a date suffix.
+        If that also exists, appends a counter.
+        """
         topic_dir_name = self.TOPIC_DIRS.get(entry.topic, "general")
         topic_dir = self._data_dir / "knowledge" / topic_dir_name
         topic_dir.mkdir(parents=True, exist_ok=True)
         slug = self._slugify(entry.title)
-        filepath = topic_dir / f"{slug}.md"
+        filepath = self._unique_path(topic_dir, slug)
         filepath.write_text(self._format_knowledge_entry(entry))
         return filepath
+
+    def _unique_path(self, directory: Path, slug: str) -> Path:
+        """Generate a unique filepath, appending date suffix on clash, then counter."""
+        path = directory / f"{slug}.md"
+        if not path.exists():
+            return path
+        date_suffix = date.today().isoformat()
+        path = directory / f"{slug}-{date_suffix}.md"
+        if not path.exists():
+            return path
+        counter = 2
+        while True:
+            path = directory / f"{slug}-{date_suffix}-{counter}.md"
+            if not path.exists():
+                return path
+            counter += 1
 
     def get_knowledge_topics_summary(self) -> str:
         """Return a concise summary of what's already documented."""
