@@ -358,47 +358,85 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
   - [x] `test_transcriber_provider_name_after_init`: Returns provider name after `_get_transcriber()`
   - [x] `data_dir` property not added — no external `engine._config.data_dir` access found
 
-- [ ] **Phase 7: CLI API key fallback**
-  - [ ] `test_resolve_api_key_anthropic`: With ANTHROPIC_API_KEY set and provider=anthropic, returns that key
-  - [ ] `test_resolve_api_key_openai`: With OPENAI_API_KEY set and provider=openai, returns that key
-  - [ ] `test_resolve_api_key_wrong_provider`: With ANTHROPIC_API_KEY set but provider=openai, does NOT return Anthropic key
+- [x] **Phase 7: CLI API key fallback** ✅
+  - [x] Added `_resolve_api_key()` provider-aware helper to `app.py`
+  - [x] Updated `_get_engine()` to use `_resolve_api_key(provider)` instead of cascading env fallback
+  - [x] `TestResolveApiKey` class with 6 tests (top-level imports, no inline imports):
+    - [x] `test_explicit_key_takes_priority`: Explicit key overrides env vars
+    - [x] `test_anthropic_provider_uses_anthropic_env`: ANTHROPIC_API_KEY used for anthropic provider
+    - [x] `test_openai_provider_uses_openai_env`: OPENAI_API_KEY used for openai provider
+    - [x] `test_wrong_provider_env_not_used`: ANTHROPIC_API_KEY not picked up when provider is openai
+    - [x] `test_kbb_api_key_fallback`: KBB_API_KEY used when provider-specific env is not set
+    - [x] `test_ollama_provider_no_env_required`: Ollama returns empty string with no env vars
+  - [x] Removed unused `LLMProviderName` import from `test_input_validation.py`
 
-- [ ] **Phase 8: Logging for silent skips**
-  - [ ] `test_malformed_knowledge_entry_logged`: Malformed file triggers warning log (caplog)
+- [x] **Phase 8: Logging for silent skips** ✅
+  - [x] Added `import logging` and `logger = logging.getLogger(__name__)` to `markdown_store.py`
+  - [x] `list_knowledge_entries`: `logger.warning("Skipping malformed knowledge file %s: %s", md_file, e)` before `continue`
+  - [x] `_parse_daily_log`: `logger.warning("Daily log missing frontmatter: %s", path)` when frontmatter is absent
+  - [x] `test_malformed_knowledge_entry_logged`: Malformed file triggers warning log (caplog)
+  - [x] `test_daily_log_missing_frontmatter_logged`: Daily log with no frontmatter triggers warning log
 
-- [ ] **Phase 12: Date import shadowing**
-  - [ ] `test_partial_logs_by_date`: Existing test passes with renamed parameter
+- [x] **Phase 9: Document format contracts** ✅
+  - [x] `DailyLog.to_markdown()`: Added docstring documenting exact markdown format and coupling to `_parse_daily_log()`
+  - [x] `MarkdownStore._parse_daily_log()`: Added docstring documenting expected format and coupling to `to_markdown()`
+  - [x] `format_frontmatter()`: Expanded docstring to document which falsy values are omitted vs kept
 
-- [ ] **Phase 13: Remove models_web.py**
-  - [ ] Verify no imports exist (grep)
-  - [ ] All existing tests pass
+- [x] **Phase 10: Document LLM provider contracts** ✅
+  - [x] `LLMProvider.stream()`: Added docstring noting it does not accept `json_schema`; callers needing structured output must use `complete()`
+  - [x] `create_provider()`: Added docstring noting `api_key` is not forwarded for the `"ollama"` provider
+  - [x] `prompts.py`: Added module-level note that inline schema descriptions must be kept in sync with `schemas.py`
 
-- [ ] **Phase 14: Move local import**
-  - [ ] `test_api_record_response`: Existing test passes
+- [x] **Phase 11: Extract question-generation helper** ✅
+  - [x] Extracted `_get_question(engine)` helper in `app.py` — checks pending question, falls back to generation
+  - [x] Replaced 3 duplicate question-generation blocks in `daily_question`, `daily_respond`, `daily_respond_voice`
+  - [x] Added `Question` to `app.py` module-level imports
 
-- [ ] **Phase 15: Remove unused request params**
-  - [ ] All existing tests pass
+- [x] **Phase 12: Date import shadowing** ✅ (completed as part of Phase 1)
 
-- [ ] **Phase 16: Transcription settings form**
-  - [ ] `test_settings_page_has_transcription_fields`: Settings page includes transcription provider, model, device, compute type
-  - [ ] `test_save_settings_transcription`: POST settings with transcription fields → persisted
+- [x] **Phase 13: Remove models_web.py** ✅
+  - [x] Verified no imports exist (`grep -r "models_web"` returned no results)
+  - [x] Deleted `src/kbb_web/models_web.py`
+  - [x] All existing tests pass
 
-- [ ] **Phase 17: Remove duplicate assertion**
-  - [ ] Existing test passes
+- [x] **Phase 14: Move local import** ✅ (completed as part of Phase 1)
 
-- [ ] **Phase 19: Fix cross-module self-imports**
-  - [ ] `test_create_transcriber_faster_whisper`: Existing test passes
-  - [ ] `test_create_transcriber_whisper`: Existing test passes
+- [x] **Phase 15: Remove unused request params** ✅
+  - [x] Removed `request: Request` from 10 handlers in `partials.py` and 7 in `pages.py`
+  - [x] Removed `from fastapi import Request` import from both files
+  - [x] All 175 tests pass
 
-- [ ] **Phase 20: Fix profile.name handling**
-  - [ ] `test_profile_page_no_profile`: Page renders with empty name
+- [x] **Phase 16: Transcription settings form** ✅
+  - [x] Added transcription_provider, whisper_model, whisper_device, whisper_compute_type fields to settings form template
+  - [x] Added `TranscriptionProviderName` import and validation to `save_settings` in `partials.py`
+  - [x] Added `TranscriptionProviderName` import and `transcription_providers` context to `settings_page` in `pages.py`
+  - [x] `TestSettingsPage.test_settings_has_transcription_fields`: Settings page includes transcription fields
+  - [x] `TestTranscriptionSettingsValidation.test_save_settings_invalid_transcription_provider`: Invalid provider shows error
+  - [x] `TestTranscriptionSettingsValidation.test_save_settings_transcription_fields_persisted`: Transcription fields persisted
+  - [x] Updated existing `TestSettingsProviderValidation` form data to include transcription fields
+
+- [x] **Phase 17: Remove duplicate assertion** ✅
+  - [x] Removed duplicate `assert config.llm_provider == LLMProviderName.ANTHROPIC` in `test_models.py`
+  - [x] All existing tests pass
+
+- [x] **Phase 18: Add _parse_json_response error to engine docs** ✅
+  - [x] Added `Raises: ValueError` docstring to `setup_profile_from_text()` — malformed LLM responses
+  - [x] Added `Raises: ValueError` docstring to `generate_daily_question()` — no profile or malformed JSON
+  - [x] Added `Raises: ValueError` docstring to `record_response()` — malformed JSON when generating slug
+
+- [x] **Phase 19: Fix cross-module self-imports** ✅
+  - [x] Removed `from kbb.transcribe import FasterWhisperProvider`, `WhisperProvider`, `OpenAITranscriptionProvider` from `_create_provider()`
+  - [x] Used direct class references since all three are defined in the same module
+  - [x] All existing tests pass
+
+- [x] **Phase 20: Fix profile.name handling** ✅ (completed as part of Phase 1)
 
 ## Verification
 
-1. `uv run ruff check src/` — lint clean
+1. `uv run ruff check .` — lint clean (including tests)
 2. `uv run ruff format .` — format clean
 3. `uv run ty check .` — type check clean
-4. `uv run pytest tests/ -v` — all tests pass (133 existing + new)
+4. `uv run pytest tests/ -v` — all tests pass (178 total)
 5. Manual: start web app, submit form with invalid topic → falls back gracefully
 6. Manual: start web app, navigate to `/daily/logs/invalid` → error page (not 500)
 7. Manual: `uv run kbb status` — confirm no regressions
@@ -435,3 +473,27 @@ Phase 1 deviations affect subsequent phases in these ways:
 - **Phase 15 (remove unused request params)** and **Phase 16 (transcription settings)**: Both touch `partials.py`. The `date_str` rename and `LLMProviderName` error handling from Phase 1 are at different locations, so no merge conflicts.
 - **Phase 8 (logging)** and **Phase 2 (topic mapping)**: Both touch `markdown_store.py`. No overlap with Phase 1 changes.
 - **No other phases are affected** by Phase 1 deviations. All interface contracts (function signatures, route signatures, data formats) remain unchanged.
+
+### Phase 7 deviations
+
+1. **Test imports are top-level, not inline**: The plan's test cases used inline `from kbb.models import LLMProviderName` inside each method. Implemented with top-level imports instead, matching the existing test style. Added 6 tests (explicit key priority, Anthropic/OpenAI provider env, wrong-provider isolation, KBB_API_KEY fallback, Ollama no-key) instead of the plan's 3.
+
+2. **`LLMProviderName` removed from `test_input_validation.py`**: The unused import was discovered during `ruff check .` and removed as a cleanup.
+
+### Phase 8 deviations
+
+1. **Added `test_daily_log_missing_frontmatter_logged`**: In addition to the planned test for malformed knowledge entries, also added a test for daily logs with missing frontmatter.
+
+### Phase 11 deviations
+
+1. **Also extracted in `daily_respond_voice`**: The plan identified 3 duplicate blocks but `daily_respond_voice` had a similar pattern that was also refactored to use `_get_question()`.
+
+### Phase 16 deviations
+
+1. **Added `TranscriptionProviderName` validation**: The plan only mentioned adding fields, but `save_settings` now also validates the transcription provider enum (showing an error alert listing valid options on invalid input), matching the pattern from Phase 1's `LLMProviderName` validation.
+
+2. **Updated existing test form data**: The existing `TestSettingsProviderValidation` tests needed their POST data updated to include the new transcription fields, since they're now required `Form()` parameters.
+
+### Phase 19 deviations
+
+1. **gitignore cleanup bundled**: The Phase 19 commit also included `.gitignore` updates and removal of accidentally tracked `data/`, `data2/`, `vault/`, `.coverage` files from Phase 7. This should have been a separate commit on the Phase 7 branch (and was later done separately there).
