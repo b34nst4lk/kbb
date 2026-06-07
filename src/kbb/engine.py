@@ -48,7 +48,11 @@ class KBPEngine:
 
     async def setup_profile_from_text(self, raw_text: str) -> UserProfile:
         """Take freeform profile text, persist it, and use the LLM
-        to extract structured information."""
+        to extract structured information.
+
+        Raises:
+            ValueError: If the LLM returns malformed JSON.
+        """
         # Save raw profile (source of truth)
         self._store.write_profile(raw_text)
 
@@ -101,7 +105,11 @@ class KBPEngine:
 
     async def generate_daily_question(self) -> Question:
         """Generate a question based on the user's profile and existing knowledge,
-        avoiding recently asked questions."""
+        avoiding recently asked questions.
+
+        Raises:
+            ValueError: If no profile is found, or if the LLM returns malformed JSON.
+        """
         profile = self._store.read_structured_profile()
         if not profile or not profile.raw_markdown:
             raise ValueError(
@@ -132,6 +140,9 @@ class KBPEngine:
 
         The LLM reorganizes the response into a coherent knowledge entry,
         but adds NO outside information.
+
+        Raises:
+            ValueError: If the LLM returns malformed JSON when generating the slug.
         """
         profile = self._store.read_structured_profile()
 
