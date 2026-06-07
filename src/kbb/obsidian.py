@@ -23,7 +23,10 @@ def format_frontmatter(metadata: dict) -> str:
         tags: [daily-log, skill]
         ---
 
-    Empty or None values are omitted.
+    Falsy values that are **omitted**: ``None``, empty string ``""``,
+    and empty list ``[]``.  All other values are kept — including ``0``,
+    ``False``, and non-empty strings/collections.  This means ``date: 0``
+    would be written, but ``slug: None`` would not.
     """
     filtered = {k: v for k, v in metadata.items() if v is not None and v != "" and v != []}
     if not filtered:

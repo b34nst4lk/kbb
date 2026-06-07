@@ -457,7 +457,18 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_daily_log(self, path: Path) -> DailyLog:
-        """Parse a daily log from markdown with YAML frontmatter."""
+        """Parse a daily log from markdown with YAML frontmatter.
+
+        Expected format — must match the output of ``DailyLog.to_markdown()``:
+        - YAML frontmatter with ``date``, ``topic``, ``slug`` fields
+        - H1 heading: ``# Daily Log — YYYY-MM-DD HH:MM``
+        - ``**Question** (topic): text``
+        - ``**Rationale**: text``
+        - ``## Response`` section
+        - ``## Recorded Knowledge`` section
+
+        When frontmatter is missing, a warning is logged and defaults are used.
+        """
         text = path.read_text()
 
         # Strip frontmatter if present
