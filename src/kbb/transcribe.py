@@ -210,8 +210,8 @@ class TranscriptionClient:
                 raise
             try:
                 return await self._fallback.transcribe(audio_path, language=language)
-            except Exception:
-                raise primary_error from primary_error
+            except Exception as fallback_error:
+                raise primary_error from fallback_error
 
 
 def _create_provider(

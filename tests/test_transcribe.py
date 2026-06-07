@@ -155,12 +155,15 @@ class TestTranscriptionClient:
 
     @pytest.mark.asyncio
     async def test_both_fail_raises_primary_error(self) -> None:
-        """When both providers fail, raise the primary error."""
+        """When both providers fail, raise the primary error chained from fallback error."""
         primary = _FailingProvider("Primary error")
         fallback = _FailingProvider("Fallback error")
         client = TranscriptionClient(primary, fallback=fallback)
-        with pytest.raises(RuntimeError, match="Primary error"):
+        with pytest.raises(RuntimeError, match="Primary error") as exc_info:
             await client.transcribe(Path("test.wav"))
+        # The fallback error should be chained as the cause
+        assert exc_info.value.__cause__ is not None
+        assert "Fallback error" in str(exc_info.value.__cause__)
 
     def test_provider_name(self) -> None:
         primary = MockTranscriptionProvider()

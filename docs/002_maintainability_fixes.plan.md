@@ -341,8 +341,9 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
   - [x] `test_knowledge_entry_slug_delegates`: Verifies `KnowledgeEntry.slug` delegates to `slugify()`
   - [x] `test_slugify_delegates_to_models`: Verifies `MarkdownStore._slugify` delegates to `models.slugify`
 
-- [ ] **Phase 4: Exception chaining**
-  - [ ] `test_transcription_client_fallback_error_chained`: Both fail → exception chain includes fallback error
+- [x] **Phase 4: Exception chaining** ✅
+  - [x] `TranscriptionClient.transcribe()`: Changed `raise primary_error from primary_error` to `raise primary_error from fallback_error`
+  - [x] `test_both_fail_raises_primary_error`: Updated to verify fallback error is chained as `__cause__`
 
 - [ ] **Phase 5: Move SUPPORTED_AUDIO_EXTENSIONS**
   - [ ] `test_supported_extensions_in_transcribe_module`: `from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS` works
