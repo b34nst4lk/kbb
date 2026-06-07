@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncGenerator
 
 import anthropic
+from anthropic.types import JSONOutputFormatParam, OutputConfigParam
 
 
 class AnthropicProvider:
@@ -40,12 +41,17 @@ class AnthropicProvider:
         if system:
             kwargs["system"] = system
         if json_schema:
-            kwargs["output_config"] = {"format": {"type": "json_schema", "schema": json_schema}}
+            kwargs["output_config"] = OutputConfigParam(
+                format=JSONOutputFormatParam(
+                    type="json_schema",
+                    schema=json_schema,
+                ),
+            )
 
         response = await self._client.messages.create(**kwargs)
         return response.content[0].text
 
-    async def stream(self, prompt: str, *, system: str = "") -> AsyncIterator[str]:
+    async def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]:
         """Streaming completion. Yields response chunks."""
         kwargs: dict = {
             "model": self._model,

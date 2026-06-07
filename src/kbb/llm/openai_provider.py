@@ -6,9 +6,11 @@ Also serves as the base for any OpenAI-compatible endpoint
 
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncGenerator
 
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat.completion_create_params import ResponseFormatJSONSchema
 
 
 class OpenAIProvider:
@@ -47,7 +49,7 @@ class OpenAIProvider:
         (response_format with json_schema type) to guarantee the response
         conforms to the schema with strict validation.
         """
-        messages = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
@@ -58,32 +60,30 @@ class OpenAIProvider:
             "messages": messages,
         }
         if json_schema:
-            kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
+            kwargs["response_format"] = ResponseFormatJSONSchema(
+                type="json_schema",
+                json_schema={
                     "name": "response",
                     "strict": True,
                     "schema": json_schema,
                 },
-            }
+            )
 
         response = await self._client.chat.completions.create(**kwargs)
         return response.choices[0].message.content or ""
 
-    async def stream(self, prompt: str, *, system: str = "") -> AsyncIterator[str]:
+    async def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]:
         """Streaming completion. Yields response chunks."""
-        messages = []
+        messages: list[ChatCompletionMessageParam] = []
         if system:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        response = await self._client.chat.completions.create(
+        async with self._client.chat.completions.stream(
             model=self._model,
             max_tokens=4096,
             messages=messages,
-            stream=True,
-        )
-        async for chunk in response:
-            delta = chunk.choices[0].delta
-            if delta.content:
-                yield delta.content
+        ) as stream:
+            async for event in stream:
+                if event.type == "content.delta.delta" and event.delta:
+                    yield event.delta

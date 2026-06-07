@@ -98,21 +98,21 @@ class TestCreateProvider:
             )
             assert "anthropic" in provider.name
         except ImportError:
-            pytest.skip("anthropic package not installed")
+            pytest.skip("anthropic package not installed")  # ty: ignore[too-many-positional-arguments]
 
     def test_openai_provider_name(self):
         try:
             provider = create_provider("openai", api_key="test-key", model="gpt-4o")
             assert "openai" in provider.name
         except ImportError:
-            pytest.skip("openai package not installed")
+            pytest.skip("openai package not installed")  # ty: ignore[too-many-positional-arguments]
 
     def test_ollama_provider_name(self):
         try:
             provider = create_provider("ollama", api_key="ollama", model="llama3")
             assert "ollama" in provider.name
         except ImportError:
-            pytest.skip("ollama package not installed")
+            pytest.skip("ollama package not installed")  # ty: ignore[too-many-positional-arguments]
 
     def test_ollama_with_custom_host(self):
         try:
@@ -124,7 +124,7 @@ class TestCreateProvider:
             )
             assert "my-server" in provider.name
         except ImportError:
-            pytest.skip("ollama package not installed")
+            pytest.skip("ollama package not installed")  # ty: ignore[too-many-positional-arguments]
 
     def test_ollama_strips_v1_suffix(self):
         """Old configs with /v1 suffix should be handled gracefully."""
@@ -137,7 +137,7 @@ class TestCreateProvider:
             )
             assert "localhost" in provider.name
         except ImportError:
-            pytest.skip("ollama package not installed")
+            pytest.skip("ollama package not installed")  # ty: ignore[too-many-positional-arguments]
 
     def test_openai_with_custom_base_url(self):
         try:
@@ -149,7 +149,7 @@ class TestCreateProvider:
             )
             assert "my-proxy" in provider.name
         except ImportError:
-            pytest.skip("openai package not installed")
+            pytest.skip("openai package not installed")  # ty: ignore[too-many-positional-arguments]
 
 
 class TestSchemas:

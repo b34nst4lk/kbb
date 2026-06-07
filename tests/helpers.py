@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncGenerator
 
 
 class MockProvider:
@@ -55,6 +55,6 @@ class MockProvider:
             )
         return self._responses.get("default", "Mock response")
 
-    async def stream(self, prompt: str, *, system: str = "") -> AsyncIterator[str]:
+    async def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]:
         response = await self.complete(prompt, system=system)
         yield response

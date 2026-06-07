@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import re
-from typing import AsyncIterator, Protocol, runtime_checkable
+from collections.abc import AsyncGenerator
+from typing import Protocol, runtime_checkable
 
 from kbb.models import KnowledgeEntry, Question, UserProfile
 from kbb.llm.schemas import ProfileSchema, QuestionSchema, PROFILE_JSON_SCHEMA, QUESTION_JSON_SCHEMA
@@ -31,7 +32,7 @@ class LLMProvider(Protocol):
         self, prompt: str, *, system: str = "", json_schema: dict | None = None
     ) -> str: ...
 
-    async def stream(self, prompt: str, *, system: str = "") -> AsyncIterator[str]: ...
+    def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]: ...
 
 
 class LLMClient:

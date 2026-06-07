@@ -164,6 +164,7 @@ def profile_setup() -> None:
         profile.name = name
         from kbb.storage.markdown_store import MarkdownStore
 
+        assert engine._config.data_dir is not None  # validated by engine constructor
         store = MarkdownStore(engine._config.data_dir)
         store.write_structured_profile(profile)
 

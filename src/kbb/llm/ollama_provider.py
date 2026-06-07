@@ -7,7 +7,7 @@ via the `format` parameter.
 
 from __future__ import annotations
 
-from typing import AsyncIterator
+from collections.abc import AsyncGenerator
 
 import ollama
 
@@ -67,7 +67,7 @@ class OllamaProvider:
         prompt: str,
         *,
         system: str = "",
-    ) -> AsyncIterator[str]:
+    ) -> AsyncGenerator[str, None]:
         """Streaming completion. Yields response chunks."""
         messages = []
         if system:
