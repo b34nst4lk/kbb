@@ -44,6 +44,28 @@ def main(
     _state["data_dir"] = data_dir
 
 
+def _resolve_api_key(provider: LLMProviderName, explicit_key: str = "") -> str:
+    """Resolve API key using provider-aware env var lookup.
+
+    Order: explicit key → provider-specific env var → KBB_API_KEY fallback.
+    This avoids passing an Anthropic key to OpenAI (or vice versa).
+    """
+    import os
+
+    if explicit_key:
+        return explicit_key
+    provider_env_keys: dict[LLMProviderName, list[str]] = {
+        LLMProviderName.ANTHROPIC: ["ANTHROPIC_API_KEY"],
+        LLMProviderName.OPENAI: ["OPENAI_API_KEY"],
+        LLMProviderName.OLLAMA: [],
+    }
+    for key in provider_env_keys.get(provider, []):
+        val = os.getenv(key, "")
+        if val:
+            return val
+    return os.getenv("KBB_API_KEY", "")
+
+
 def _get_engine() -> KBPEngine:
     """Load config and create engine. Requires --data-dir or KBB_DATA_DIR."""
     import os
@@ -76,9 +98,7 @@ def _get_engine() -> KBPEngine:
         data_dir=data_dir,
         llm_provider=provider,
         llm_model=os.getenv("KBB_LLM_MODEL", default_models.get(provider, "gpt-4o")),
-        llm_api_key=os.getenv(
-            "KBB_API_KEY", os.getenv("ANTHROPIC_API_KEY", os.getenv("OPENAI_API_KEY", ""))
-        ),
+        llm_api_key=_resolve_api_key(provider),
         llm_base_url=os.getenv("KBB_LLM_BASE_URL", ""),
         transcription_provider=TranscriptionProviderName(
             os.getenv("KBB_TRANSCRIPTION_PROVIDER", "faster-whisper")
