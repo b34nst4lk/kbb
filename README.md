@@ -1,6 +1,6 @@
 # Knowledge Base Builder
 
-A CLI tool that builds a personal knowledge base through daily questions. It understands who you are, reviews what you've already documented, and prompts you with targeted questions to extract your knowledge.
+A personal knowledge base that grows through daily questions. It understands who you are, reviews what you've already documented, and prompts you with targeted questions to extract your knowledge.
 
 ## Features
 
@@ -8,14 +8,40 @@ A CLI tool that builds a personal knowledge base through daily questions. It und
 - **Knowledge-aware**: Questions are derived from what's already known about you, avoiding repetition
 - **Daily prompts**: Generates one targeted question per day to extract knowledge
 - **Faithful recording**: Responses are recorded coherently without adding outside information
-- **Pluggable LLM**: Works with Claude (Anthropic) or GPT (OpenAI)
+- **Pluggable LLM**: Works with Claude (Anthropic), GPT (OpenAI), or local models (Ollama)
 - **Markdown storage**: All data stored as human-readable, editable markdown files
+- **Multiple interfaces**: CLI, web app, and desktop wrapper
+
+## Interface Coverage
+
+| Feature | CLI | Web | Desktop | Telegram | Discord |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Initialize data directory | ✅ | — | — | 🔜 | 🔜 |
+| Profile setup / edit | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Profile view | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Profile refresh | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Generate daily question | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Record response | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Knowledge list | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Knowledge detail view | — | ✅ | ✅ | 🔜 | 🔜 |
+| Import knowledge (file) | ✅ | — | — | 🔜 | 🔜 |
+| Import knowledge (text) | — | ✅ | ✅ | 🔜 | 🔜 |
+| Daily logs list | — | ✅ | ✅ | 🔜 | 🔜 |
+| View log by date | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Status overview | ✅ | ✅ | ✅ | 🔜 | 🔜 |
+| Settings / configuration | — | ✅ | ✅ | 🔜 | 🔜 |
+| JSON API | — | ✅ | ✅ | 🔜 | 🔜 |
+
+✅ = implemented · 🔜 = upcoming · — = not applicable
 
 ## Setup
 
 ```bash
-# Install dependencies
-pip install -e ".[dev]"
+# Install with web support
+pip install -e ".[web]"
+
+# Or with all interfaces
+pip install -e ".[all]"
 
 # Set your API key
 export ANTHROPIC_API_KEY="your-key-here"
@@ -29,9 +55,12 @@ kbb profile-setup
 
 # Answer today's question
 kbb daily-respond
+
+# Or launch the web app
+uvicorn kbb_web.app:app --port 8199
 ```
 
-## Commands
+## CLI Commands
 
 | Command | Description |
 |---|---|
@@ -56,6 +85,8 @@ kbb daily-respond
 | `KBB_LLM_BASE_URL` | — | Custom endpoint URL (for OpenAI-compatible APIs) |
 | `KBB_DATA_DIR` | `data` | Path to data directory |
 
+Config file search order: `KBB_CONFIG_FILE` env → `./kbb.yaml` → `~/.config/kbb/kbb.yaml` → `~/.kbb.yaml`
+
 ### Using with Ollama
 
 ```bash
@@ -71,10 +102,10 @@ export KBB_LLM_MODEL=llama3
 kbb profile-setup
 ```
 
-Ollama's default endpoint is `http://localhost:11434/v1`. To use a different host, set `KBB_LLM_BASE_URL`:
+Ollama's default endpoint is `http://localhost:11434`. To use a different host, set `KBB_LLM_BASE_URL`:
 
 ```bash
-export KBB_LLM_BASE_URL=http://my-server:11434/v1
+export KBB_LLM_BASE_URL=http://my-server:11434
 ```
 
 ## Daily Automation
@@ -88,7 +119,7 @@ Add to your crontab for daily question prompts:
 
 ## Architecture
 
-The core library (`src/kbb/`) is fully importable and integration-agnostic. The CLI (`src/kbb_cli/`) is a thin adapter. This design makes it straightforward to build integrations like Telegram bots or Discord bots that reuse the same engine.
+The core library (`src/kbb/`) is integration-agnostic — it never touches I/O directly. Adapters (CLI, web, desktop, upcoming Telegram/Discord) call engine methods and handle presentation.
 
 ```python
 from kbb.engine import KBPEngine
