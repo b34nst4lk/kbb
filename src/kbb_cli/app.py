@@ -389,5 +389,16 @@ def status() -> None:
         console.print("  [dim]Run 'kbb daily-respond' to answer it.[/dim]")
 
 
+@app.command(name="sync-vault")
+def sync_vault() -> None:
+    """Regenerate Obsidian vault config and aggregate daily notes.
+
+    Useful after upgrading from a legacy format or for manual resync.
+    """
+    engine = _get_engine()
+    engine.sync_obsidian_vault()
+    console.print("[green]Vault synced.[/green] Obsidian config and daily notes regenerated.")
+
+
 if __name__ == "__main__":
     app()

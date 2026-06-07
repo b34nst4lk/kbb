@@ -90,9 +90,19 @@ class DailyLog:
     slug: str = ""
 
     def to_markdown(self) -> str:
-        """Serialize this daily log to markdown format."""
+        """Serialize this daily log to markdown format with Obsidian frontmatter."""
+        from kbb.obsidian import format_frontmatter
+
+        frontmatter = format_frontmatter(
+            {
+                "date": self.log_timestamp.strftime("%Y-%m-%d"),
+                "topic": self.question_topic.value,
+                "slug": self.slug or None,
+            }
+        )
         ts = self.log_timestamp.strftime("%Y-%m-%d %H:%M")
         return (
+            f"{frontmatter}"
             f"# Daily Log — {ts}\n\n"
             f"**Question** ({self.question_topic.value}): {self.question}\n\n"
             f"**Rationale**: {self.question_rationale}\n\n"

@@ -130,12 +130,59 @@ question = await engine.generate_daily_question()
 log = await engine.record_response(question, user_response)
 ```
 
+## Obsidian Integration
+
+The data directory is Obsidian-compatible — open it directly as an Obsidian vault. Knowledge entries and daily logs use YAML frontmatter for metadata, and aggregate daily notes link to individual logs with `[[wikilinks]]`.
+
+```bash
+# Open your KBB data directory in Obsidian
+# File → Open Vault → choose your data/ folder
+```
+
+All files use frontmatter for metadata that Obsidian can index:
+
+```markdown
+---
+title: project-stakeholder-management
+topic: process
+source: daily_log
+date: 2026-06-06
+tags: [daily-log, process]
+---
+
+# project-stakeholder-management
+...
+```
+
+Daily notes aggregate all logs for a given date:
+
+```markdown
+---
+date: 2026-06-06
+---
+
+# Daily Note — 2026-06-06
+
+## How do you prioritize stakeholder expectations?
+
+![[2026-06-06T21-53-project-stakeholder-management]]
+```
+
+To regenerate all daily notes and Obsidian config (e.g., after upgrading from a legacy format):
+
+```bash
+kbb sync-vault
+```
+
 ## Data Storage
 
 All data is stored as markdown files in the `data/` directory:
 
 ```
 data/
+├── .obsidian/               # Obsidian vault config
+│   ├── app.json
+│   └── daily-notes.json
 ├── profile.md              # Your profile (edit this directly)
 ├── profile_structured.md   # Auto-generated structured view
 ├── knowledge/
@@ -145,5 +192,7 @@ data/
 │   ├── skills/
 │   └── general/
 └── logs/
+    ├── 2026-06-06.md       # Aggregate daily note (Obsidian)
+    └── 2026-06-06T21-53-project-stakeholder-management.md
     └── 2026-06-06.md       # Daily question + response logs
 ```

@@ -223,3 +223,11 @@ class KBPEngine:
     def get_pending_question(self) -> Question | None:
         """Read the pending question, if any."""
         return self._store.read_pending_question()
+
+    def sync_obsidian_vault(self) -> None:
+        """Regenerate all daily notes and Obsidian config.
+
+        Useful for one-time migration or manual resync after upgrading
+        from the legacy format to frontmatter-based storage.
+        """
+        self._store.sync_obsidian_vault()

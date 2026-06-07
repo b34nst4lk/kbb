@@ -1,4 +1,8 @@
-"""Markdown file storage for knowledge base data."""
+"""Markdown file storage for knowledge base data.
+
+All files use YAML frontmatter for Obsidian compatibility.
+Legacy files without frontmatter are still parseable for backward compatibility.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +13,7 @@ from pathlib import Path
 from datetime import datetime
 
 from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile
+from kbb.obsidian import format_frontmatter, generate_obsidian_config, parse_frontmatter
 
 
 class MarkdownStore:
@@ -40,6 +45,8 @@ class MarkdownStore:
             "logs",
         ]:
             (self._data_dir / subdir).mkdir(parents=True, exist_ok=True)
+        # Ensure Obsidian config exists
+        generate_obsidian_config(self._data_dir)
 
     # --- Profile ---
 
@@ -153,11 +160,19 @@ class MarkdownStore:
     # --- Daily Logs ---
 
     def list_daily_logs(self) -> list[Path]:
-        """Return all daily log file paths sorted chronologically."""
+        """Return all daily log file paths sorted chronologically.
+
+        Excludes aggregate daily notes (YYYY-MM-DD.md without a timestamp).
+        """
         logs_dir = self._data_dir / "logs"
         if not logs_dir.exists():
             return []
-        return sorted(logs_dir.glob("*.md"))
+        return sorted(
+            p
+            for p in logs_dir.glob("*.md")
+            # Skip aggregate daily notes: they match YYYY-MM-DD.md (no T in stem)
+            if "T" in p.stem
+        )
 
     def read_daily_log(self, path: Path) -> DailyLog | None:
         """Read a daily log by file path."""
@@ -166,26 +181,85 @@ class MarkdownStore:
         return self._parse_daily_log(path)
 
     def find_daily_logs_by_date(self, d: date) -> list[DailyLog]:
-        """Find all daily logs for a given date."""
+        """Find all daily logs for a given date.
+
+        Excludes aggregate daily notes (YYYY-MM-DD.md without a timestamp).
+        """
         logs_dir = self._data_dir / "logs"
         if not logs_dir.exists():
             return []
         prefix = d.isoformat()
         results = []
         for f in sorted(logs_dir.glob(f"{prefix}*.md")):
+            # Skip aggregate daily notes (no T in stem = YYYY-MM-DD.md)
+            if "T" not in f.stem:
+                continue
             log = self._parse_daily_log(f)
             if log:
                 results.append(log)
         return results
 
     def write_daily_log(self, log: DailyLog) -> Path:
-        """Write a daily log to disk. Uses timestamp + slug for filename."""
+        """Write a daily log to disk. Uses timestamp + slug for filename.
+
+        Also updates the aggregate daily note for Obsidian.
+        """
         ts = log.log_timestamp.strftime("%Y-%m-%dT%H-%M")
         slug = log.slug or self._slugify(log.question)[:40]
         filename = f"{ts}-{slug}.md"
         path = self._data_dir / "logs" / filename
         path.write_text(log.to_markdown())
+        # Update the aggregate daily note for Obsidian
+        self.write_daily_note(log.log_timestamp.date())
         return path
+
+    def write_daily_note(self, d: date) -> Path:
+        """Write or update an aggregate daily note for Obsidian.
+
+        Creates a `logs/YYYY-MM-DD.md` file that links to all individual
+        logs for that date using Obsidian wikilinks.
+        """
+        logs = self.find_daily_logs_by_date(d)
+        date_str = d.isoformat()
+        frontmatter = format_frontmatter({"date": date_str})
+
+        lines = [frontmatter, f"# Daily Note — {date_str}\n"]
+        for log in logs:
+            log_slug = log.slug or self._slugify(log.question)[:40]
+            ts = log.log_timestamp.strftime("%Y-%m-%dT%H-%M")
+            link = f"{ts}-{log_slug}"
+            lines.append(f"## {log.question}\n")
+            lines.append(f"![[{link}]]\n")
+
+        path = self._data_dir / "logs" / f"{date_str}.md"
+        path.write_text("\n".join(lines))
+        return path
+
+    def sync_obsidian_vault(self) -> None:
+        """Regenerate all daily notes and Obsidian config.
+
+        Useful for one-time migration or manual resync.
+        """
+        generate_obsidian_config(self._data_dir)
+        # Collect all unique dates from daily logs
+        logs_dir = self._data_dir / "logs"
+        if not logs_dir.exists():
+            return
+        dates: set[date] = set()
+        for md_file in logs_dir.glob("*.md"):
+            # Skip aggregate daily notes (YYYY-MM-DD.md without T)
+            if re.match(r"\d{4}-\d{2}-\d{2}\.md$", md_file.name):
+                continue
+            stem = md_file.stem
+            # Extract date from timestamp format: YYYY-MM-DDTHH-MM-slug
+            date_match = re.match(r"(\d{4}-\d{2}-\d{2})T", stem)
+            if date_match:
+                try:
+                    dates.add(date.fromisoformat(date_match.group(1)))
+                except ValueError:
+                    continue
+        for d in sorted(dates):
+            self.write_daily_note(d)
 
     def get_recent_questions(self, limit: int = 10) -> list[str]:
         """Return recent question texts (to avoid repetition)."""
@@ -349,7 +423,10 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_knowledge_entry(self, path: Path) -> KnowledgeEntry:
-        """Parse a knowledge entry from markdown."""
+        """Parse a knowledge entry from markdown.
+
+        Handles both YAML frontmatter format and legacy inline metadata.
+        """
         text = path.read_text()
         topic_name = path.parent.name
         # Map directory names back to QuestionTopic
@@ -362,20 +439,49 @@ class MarkdownStore:
         }
         topic = topic_reverse.get(topic_name, QuestionTopic.GENERAL)
 
-        # Parse title from first heading
+        # Try frontmatter first
+        metadata, body = parse_frontmatter(text)
+
+        if metadata:
+            # Frontmatter format — extract from YAML
+            title = metadata.get("title", path.stem.replace("-", " ").replace("_", " ").title())
+            topic_str = metadata.get("topic", topic_name)
+            try:
+                topic = QuestionTopic(topic_str)
+            except ValueError:
+                topic = topic_reverse.get(topic_str, QuestionTopic.GENERAL)
+            source = metadata.get("source", "import")
+            created_at = None
+            date_str = metadata.get("date")
+            if date_str:
+                try:
+                    created_at = date.fromisoformat(str(date_str))
+                except ValueError:
+                    pass
+            raw_tags = metadata.get("tags", [])
+            tags = raw_tags if isinstance(raw_tags, list) else [raw_tags]
+            content = body.strip()
+            return KnowledgeEntry(
+                title=title,
+                content=content,
+                topic=topic,
+                source=source,
+                created_at=created_at,
+                tags=tags,
+            )
+
+        # Legacy format — parse from markdown structure
         title = path.stem.replace("-", " ").replace("_", " ").title()
         for line in text.split("\n"):
             if line.startswith("# "):
                 title = line.lstrip("#").strip()
                 break
 
-        # Parse metadata line
         source = "import"
         created_at: date | None = None
         tags: list[str] = []
         for line in text.split("\n"):
             if line.startswith("*") and "Topic:" in line:
-                # Parse: *Topic: education | Source: import | Date: 2026-06-06*
                 meta = line.strip("*").strip()
                 for part in meta.split("|"):
                     part = part.strip()
@@ -393,14 +499,12 @@ class MarkdownStore:
                         ]
                 break
 
-        # Content is everything after the metadata
         content_lines: list[str] = []
         in_content = False
         for line in text.split("\n"):
             if in_content:
                 content_lines.append(line)
             elif line.startswith("*") and "Topic:" in line:
-                # Skip the metadata line and any blank line after it
                 in_content = True
                 continue
 
@@ -416,35 +520,45 @@ class MarkdownStore:
         )
 
     def _format_knowledge_entry(self, entry: KnowledgeEntry) -> str:
-        """Format a knowledge entry as markdown."""
-        meta_parts = [f"Topic: {entry.topic.value}", f"Source: {entry.source}"]
-        if entry.created_at:
-            meta_parts.append(f"Date: {entry.created_at.isoformat()}")
-        meta_line = " | ".join(meta_parts)
-
-        lines: list[str] = [
-            f"# {entry.title}\n",
-            f"*{meta_line}*\n",
-        ]
-        if entry.tags:
-            lines.append(f"*Tags: {', '.join(entry.tags)}*\n")
-        lines.append(entry.content)
+        """Format a knowledge entry as markdown with Obsidian-compatible frontmatter."""
+        frontmatter = format_frontmatter(
+            {
+                "title": entry.title,
+                "topic": entry.topic.value,
+                "source": entry.source,
+                "date": entry.created_at.isoformat() if entry.created_at else None,
+                "tags": entry.tags if entry.tags else None,
+            }
+        )
+        lines = [frontmatter, f"# {entry.title}\n", entry.content]
         return "\n".join(lines)
 
     def _parse_daily_log(self, path: Path) -> DailyLog:
-        """Parse a daily log from markdown."""
+        """Parse a daily log from markdown.
+
+        Handles both YAML frontmatter format and legacy format.
+        """
         text = path.read_text()
+
+        # Strip frontmatter if present
+        metadata, body = parse_frontmatter(text)
 
         # Parse timestamp from title: "# Daily Log — 2026-06-06 14:30"
         log_timestamp = datetime.now()
-        for line in text.split("\n"):
+        if metadata and "date" in metadata:
+            # Use frontmatter date, default to midnight if no time
+            date_str = str(metadata["date"])
+            try:
+                log_timestamp = datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                pass
+
+        for line in body.split("\n"):
             if line.startswith("# ") and "—" in line:
                 ts_str = line.split("—")[1].strip()
-                # Try parsing "2026-06-06 14:30" format
                 try:
                     log_timestamp = datetime.strptime(ts_str, "%Y-%m-%d %H:%M")
                 except ValueError:
-                    # Fallback: try date-only format for backwards compat
                     try:
                         log_timestamp = datetime.strptime(ts_str, "%Y-%m-%d")
                     except ValueError:
@@ -452,26 +566,27 @@ class MarkdownStore:
                 break
 
         # Parse slug from filename: "2026-06-06T14-30-skill-testing.md"
+        # Also check frontmatter for slug
         slug = ""
-        stem = path.stem
-        # Extract everything after the timestamp prefix (YYYY-MM-DDTHH-MM-)
-        slug_match = re.match(r"\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-(.+)", stem)
-        if slug_match:
-            slug = slug_match.group(1)
+        if metadata and "slug" in metadata:
+            slug = str(metadata["slug"])
+        else:
+            stem = path.stem
+            slug_match = re.match(r"\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-(.+)", stem)
+            if slug_match:
+                slug = slug_match.group(1)
 
         # Parse question line: **Question** (topic): text
         question = ""
         question_topic = QuestionTopic.GENERAL
-        for line in text.split("\n"):
+        for line in body.split("\n"):
             if line.startswith("**Question**"):
-                # Extract topic from parentheses
                 topic_match = re.search(r"\((\w+)\)", line)
                 if topic_match:
                     try:
                         question_topic = QuestionTopic(topic_match.group(1))
                     except ValueError:
                         pass
-                # Extract question text after the colon
                 colon_idx = line.find(":")
                 if colon_idx >= 0:
                     question = line[colon_idx + 1 :].strip()
@@ -479,7 +594,7 @@ class MarkdownStore:
 
         # Parse rationale
         rationale = ""
-        for line in text.split("\n"):
+        for line in body.split("\n"):
             if line.startswith("**Rationale**"):
                 colon_idx = line.find(":")
                 if colon_idx >= 0:
@@ -489,7 +604,7 @@ class MarkdownStore:
         # Parse response and recorded knowledge sections
         response = ""
         recorded_entry = ""
-        sections = text.split("## ")
+        sections = body.split("## ")
         for section in sections:
             if section.startswith("Response"):
                 response = section.replace("Response", "", 1).strip()
