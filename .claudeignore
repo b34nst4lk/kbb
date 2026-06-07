@@ -1,0 +1,19 @@
+# Lock files (312KB, no coding context)
+uv.lock
+
+# Runtime data directories
+data/
+data2/
+vault/
+src/data/
+
+# Test/coverage artifacts
+.coverage
+htmlcov/
+
+# Completed plan files (already implemented, 823 lines total)
+docs/001_voice_transcription.plan.md
+docs/002_maintainability_fixes.plan.md
+
+# Duplicate assets
+docs/logo.svg
