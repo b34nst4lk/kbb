@@ -212,7 +212,6 @@ class TestKBBConfig:
         config = KBBConfig()
         assert config.data_dir is None  # Must be provided explicitly
         assert config.llm_provider == LLMProviderName.ANTHROPIC
-        assert config.llm_provider == LLMProviderName.ANTHROPIC
         assert config.llm_model == "claude-sonnet-4-20250514"
         assert config.llm_api_key == ""
         assert config.daily_log_time == "09:00"
