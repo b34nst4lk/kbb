@@ -134,9 +134,10 @@ def _reset_engine_state(server_url):
     # Re-create directory structure so the store doesn't break
     engine._store._ensure_dirs()
 
-    # Reset mock provider call history and responses
+    # Reset mock provider call history, responses, and exception overrides
     _mock_llm._calls.clear()
     _mock_llm._responses.clear()
+    _mock_llm._raise_on.clear()
 
     yield
 
