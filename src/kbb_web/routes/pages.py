@@ -32,7 +32,7 @@ def dashboard(
 
     template = templates.get_template("pages/dashboard.html")
     html = template.render(
-        profile_name=profile.name if profile else None,
+        profile_name=profile.name or "",
         knowledge_count=len(entries),
         log_count=len(log_paths),
         pending_question=pending,
@@ -84,7 +84,12 @@ def daily_logs_by_date(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
-    d = date.fromisoformat(date_str)
+    try:
+        d = date.fromisoformat(date_str)
+    except ValueError:
+        template = templates.get_template("pages/error.html")
+        html = template.render(error=f"Invalid date: {date_str}")
+        return HTMLResponse(content=html, status_code=400)
     logs = engine.find_daily_logs_by_date(d)
     template = templates.get_template("pages/daily/log.html")
     html = template.render(date_str=date_str, logs=logs)

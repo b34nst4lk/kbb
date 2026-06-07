@@ -11,8 +11,9 @@ KBB builds a personal knowledge base through daily question-answer interactions.
 ```
 src/kbb/                    # Core library — integration-agnostic
   engine.py                 # KBPEngine: orchestrator (no I/O)
-  models.py                 # Data models (QuestionTopic, UserProfile, KnowledgeEntry, DailyLog, Question, KBBConfig)
+  models.py                 # Data models (QuestionTopic, UserProfile, KnowledgeEntry, DailyLog, Question, KBBConfig, TranscriptionProviderName)
   obsidian.py               # YAML frontmatter helpers, vault config generation
+  transcribe.py             # TranscriptionProvider protocol, FasterWhisperProvider, WhisperProvider, OpenAITranscriptionProvider, TranscriptionClient, create_transcriber()
   llm/
     base.py                 # LLMProvider protocol, LLMClient, create_provider() factory
     schemas.py              # Pydantic schemas (ProfileSchema, QuestionSchema) + strict_json_schema()
@@ -34,7 +35,8 @@ src/kbb_web/                # Web adapter (FastAPI + HTMX + Jinja2)
     partials.py              # HTMX partial routes (HTML fragments)
     api.py                  # JSON API routes
   static/css/kbb.css
-  static/js/kbb.js         # Ctrl+Enter, auto-focus, error display
+  static/icons/favicon.svg, logo.svg
+  static/js/kbb.js          # Ctrl+Enter, auto-focus, error display, VoiceRecorder, transcribeAudio()
   templates/                # Jinja2 templates (base, pages, partials)
 ```
 
@@ -91,6 +93,7 @@ uv run kbb --data-dir data status  # Show status
 - **No `try/except ... pass`** without an inline comment explaining why the exception is safe to ignore
 - **Provider-native structured output** for all JSON responses — no manual JSON extraction or auto-closing
 - **`LLMProvider` protocol** with `stream` returning `AsyncGenerator[str, None]` (not `AsyncIterator`)
+- **`TranscriptionProvider` protocol** with `transcribe(audio_path, *, language)` → `str`; `TranscriptionClient` wraps primary + fallback
 - **`MarkdownStore`** raises `ValueError` on missing frontmatter (no legacy fallback)
 - **Error messages** should be clear about what went wrong and what the user should do
 
@@ -98,6 +101,7 @@ uv run kbb --data-dir data status  # Show status
 
 - **pytest** with `asyncio_mode = "auto"`, `testpaths = ["tests"]`
 - **MockProvider** in `tests/helpers.py` returns canned responses based on system prompt content matching
+- **MockTranscriptionProvider** in `tests/helpers.py` returns canned transcription text, records calls
 - Engine tests inject MockProvider by replacing `engine._llm`
 - Storage tests use `tmp_path` for filesystem isolation
 - Web tests use Starlette TestClient with mock-backed engine
@@ -114,11 +118,11 @@ uv run kbb --data-dir data status  # Show status
 - **Pluggable LLM**: Claude, GPT, or local models via Ollama
 - **Markdown storage**: All data as human-readable files, Obsidian-compatible
 - **Multiple interfaces**: CLI (Typer), Web (FastAPI+HTMX), Desktop (pywebview), upcoming: Telegram, Discord
-- **Voice-to-text**: Planned — local Whisper first, OpenAI API fallback
+- **Voice-to-text**: Implemented — faster-whisper (default), openai-whisper (MPS), OpenAI API; browser mic recording
 
 ## Upcoming Features (Roadmap)
 
-1. **Voice-to-text transcription** (`src/kbb/transcribe.py`) — local Whisper first, OpenAI API fallback
+1. ~~**Voice-to-text transcription**~~ — ✅ Implemented in `src/kbb/transcribe.py`
 2. **Telegram bot** (`src/kbb_telegram/`) — push questions, receive text/voice responses
 3. **Discord bot** (`src/kbb_discord/`) — same as Telegram but via DMs
 

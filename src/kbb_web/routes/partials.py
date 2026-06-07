@@ -62,9 +62,13 @@ async def record_response(
     templates: Environment = Depends(get_templates),
 ):
     """Record a response to a daily question."""
+    try:
+        topic_enum = QuestionTopic(question_topic)
+    except ValueError:
+        topic_enum = QuestionTopic.GENERAL
     question = Question(
         text=question_text,
-        topic=QuestionTopic(question_topic),
+        topic=topic_enum,
         rationale=question_rationale,
     )
     try:
@@ -160,10 +164,14 @@ async def import_knowledge(
 ):
     """Import knowledge from text input."""
     try:
+        topic_enum = QuestionTopic(topic)
+    except ValueError:
+        topic_enum = QuestionTopic.GENERAL
+    try:
         entry = await engine.import_knowledge_from_text(
             title=title,
             content=content,
-            topic=QuestionTopic(topic),
+            topic=topic_enum,
         )
     except Exception as e:
         template = templates.get_template("partials/error_alert.html")
@@ -190,17 +198,18 @@ def knowledge_list_partial(
 @router.get("/logs")
 def logs_by_date(
     request: Request,
-    date: str = "",
+    date_str: str = "",
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
     """Return daily logs for a date as a fragment."""
-    from datetime import date as date_type
-
-    if date:
-        d = date_type.fromisoformat(date)
+    if date_str:
+        try:
+            d = date.fromisoformat(date_str)
+        except ValueError:
+            d = date.today()
     else:
-        d = date_type.today()
+        d = date.today()
     logs = engine.find_daily_logs_by_date(d)
     template = templates.get_template("partials/log_list.html")
     html = template.render(logs=logs)
@@ -262,10 +271,19 @@ def save_settings(
     templates: Environment = Depends(get_templates),
 ):
     """Save settings to config file."""
+    try:
+        provider_enum = LLMProviderName(llm_provider)
+    except ValueError:
+        valid = ", ".join(p.value for p in LLMProviderName)
+        template = templates.get_template("partials/error_alert.html")
+        html = template.render(
+            error=f"Invalid LLM provider: {llm_provider}. Valid options: {valid}"
+        )
+        return HTMLResponse(content=html)
     config.data_dir = Path(data_dir).expanduser()
     if not config.data_dir.is_absolute():
         config.data_dir = config.data_dir.resolve()
-    config.llm_provider = LLMProviderName(llm_provider)
+    config.llm_provider = provider_enum
     config.llm_model = llm_model
     config.llm_base_url = llm_base_url
     config.daily_log_time = daily_log_time

@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 from kbb.engine import KBPEngine, SUPPORTED_AUDIO_EXTENSIONS
-from kbb.models import QuestionTopic
+from kbb.models import Question, QuestionTopic
 from kbb_web.dependencies import get_engine
 
 router = APIRouter()
@@ -157,10 +157,14 @@ def api_list_knowledge(engine: KBPEngine = Depends(get_engine)):
 async def api_import_knowledge(
     body: KnowledgeImportRequest, engine: KBPEngine = Depends(get_engine)
 ):
+    try:
+        topic_enum = QuestionTopic(body.topic)
+    except ValueError:
+        topic_enum = QuestionTopic.GENERAL
     entry = await engine.import_knowledge_from_text(
         title=body.title,
         content=body.content,
-        topic=QuestionTopic(body.topic),
+        topic=topic_enum,
     )
     return KnowledgeEntryResponse(
         title=entry.title,
@@ -188,11 +192,13 @@ async def api_get_question(engine: KBPEngine = Depends(get_engine)):
 
 @router.post("/daily/response")
 async def api_record_response(body: ResponseCreateRequest, engine: KBPEngine = Depends(get_engine)):
-    from kbb.models import Question
-
+    try:
+        topic_enum = QuestionTopic(body.question_topic)
+    except ValueError:
+        topic_enum = QuestionTopic.GENERAL
     question = Question(
         text=body.question_text,
-        topic=QuestionTopic(body.question_topic),
+        topic=topic_enum,
         rationale=body.question_rationale,
     )
     log = await engine.record_response(question, body.response)
@@ -212,7 +218,10 @@ def api_list_logs(
     date_str: str = Query(None, alias="date"), engine: KBPEngine = Depends(get_engine)
 ):
     if date_str:
-        d = date.fromisoformat(date_str)
+        try:
+            d = date.fromisoformat(date_str)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid date format: {date_str}")
     else:
         d = date.today()
     logs = engine.find_daily_logs_by_date(d)
