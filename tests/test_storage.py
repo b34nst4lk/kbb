@@ -3,6 +3,8 @@
 from datetime import date, datetime
 from pathlib import Path
 
+import pytest
+
 from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile
 from kbb.storage.markdown_store import MarkdownStore
 
@@ -87,6 +89,16 @@ class TestKnowledgeEntries:
         # Verify it's persisted
         entries = mock_store.list_knowledge_entries()
         assert len(entries) == 1
+
+    def test_parse_knowledge_entry_missing_frontmatter_raises(self, mock_store: MarkdownStore):
+        """A knowledge entry file without frontmatter should raise ValueError."""
+        # Manually write a file without frontmatter
+        topic_dir = mock_store._data_dir / "knowledge" / "general"
+        topic_dir.mkdir(parents=True, exist_ok=True)
+        (topic_dir / "no-frontmatter.md").write_text("# No Frontmatter\n\nJust plain markdown.\n")
+
+        with pytest.raises(ValueError, match="missing frontmatter"):
+            mock_store._parse_knowledge_entry(topic_dir / "no-frontmatter.md")
 
 
 class TestDailyLogs:
@@ -228,6 +240,21 @@ class TestPendingQuestion:
         # Clearing when there's no pending question should be a no-op
         mock_store.clear_pending_question()
         assert mock_store.read_pending_question() is None
+
+    def test_pending_question_uses_frontmatter(self, mock_store: MarkdownStore):
+        """Verify pending question file uses YAML frontmatter format."""
+        question = Question(
+            text="What is your approach?",
+            topic=QuestionTopic.PROCESS,
+            rationale="Test rationale",
+        )
+        mock_store.write_pending_question(question)
+        path = mock_store._data_dir / "pending_question.md"
+        content = path.read_text()
+        assert content.startswith("---")
+        assert "question:" in content
+        assert "topic: process" in content
+        assert "rationale:" in content
 
 
 class TestSlugify:

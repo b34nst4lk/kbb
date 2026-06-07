@@ -154,7 +154,7 @@ class LLMClient:
                 text = text[:-3]
             text = text.strip()
 
-        # Try direct parse
+        # Try direct parse — LLM may wrap JSON in prose, so fall through to extraction
         try:
             return json.loads(text)
         except json.JSONDecodeError:
@@ -168,13 +168,13 @@ class LLMClient:
             try:
                 return json.loads(candidate)
             except json.JSONDecodeError:
-                # Try to auto-close truncated JSON
+                # Try to auto-close truncated JSON — fall through to full-text attempt
                 closed = LLMClient._try_close_json(candidate)
                 if closed:
                     try:
                         return json.loads(closed)
                     except json.JSONDecodeError:
-                        pass
+                        pass  # Auto-close didn't fix it, try full-text next
 
         # Last resort: try auto-closing on the full text
         closed = LLMClient._try_close_json(text)
@@ -182,7 +182,7 @@ class LLMClient:
             try:
                 return json.loads(closed)
             except json.JSONDecodeError:
-                pass
+                pass  # All strategies exhausted, raise below
 
         raise ValueError(f"Failed to parse LLM response as JSON: {text[:200]}")
 

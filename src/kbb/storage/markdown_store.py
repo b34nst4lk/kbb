@@ -1,16 +1,13 @@
 """Markdown file storage for knowledge base data.
 
 All files use YAML frontmatter for Obsidian compatibility.
-Legacy files without frontmatter are still parseable for backward compatibility.
 """
 
 from __future__ import annotations
 
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
-
-from datetime import datetime
 
 from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile
 from kbb.obsidian import format_frontmatter, generate_obsidian_config, parse_frontmatter
@@ -236,10 +233,7 @@ class MarkdownStore:
         return path
 
     def sync_obsidian_vault(self) -> None:
-        """Regenerate all daily notes and Obsidian config.
-
-        Useful for one-time migration or manual resync.
-        """
+        """Regenerate all daily notes and Obsidian config."""
         generate_obsidian_config(self._data_dir)
         # Collect all unique dates from daily logs
         logs_dir = self._data_dir / "logs"
@@ -285,21 +279,18 @@ class MarkdownStore:
         if not text.strip():
             return None
 
-        question = ""
-        topic = QuestionTopic.GENERAL
-        rationale = ""
+        metadata, _ = parse_frontmatter(text)
+        if not metadata:
+            return None
 
-        for line in text.split("\n"):
-            if line.startswith("**Question**:"):
-                question = line.split("**Question**:", 1)[1].strip()
-            elif line.startswith("**Topic**:"):
-                topic_str = line.split("**Topic**:", 1)[1].strip()
-                try:
-                    topic = QuestionTopic(topic_str)
-                except ValueError:
-                    pass
-            elif line.startswith("**Rationale**:"):
-                rationale = line.split("**Rationale**:", 1)[1].strip()
+        question = metadata.get("question", "")
+        topic = QuestionTopic.GENERAL
+        if "topic" in metadata:
+            try:
+                topic = QuestionTopic(metadata["topic"])
+            except ValueError:
+                pass  # Unknown topic value — keep default GENERAL
+        rationale = metadata.get("rationale", "")
 
         if not question:
             return None
@@ -308,13 +299,14 @@ class MarkdownStore:
     def write_pending_question(self, question: Question) -> None:
         """Persist a generated question so it survives between commands."""
         path = self._data_dir / "pending_question.md"
-        lines = [
-            "# Pending Question\n",
-            f"**Question**: {question.text}",
-            f"**Topic**: {question.topic.value}",
-            f"**Rationale**: {question.rationale}",
-        ]
-        path.write_text("\n".join(lines))
+        frontmatter = format_frontmatter(
+            {
+                "question": question.text,
+                "topic": question.topic.value,
+                "rationale": question.rationale,
+            }
+        )
+        path.write_text(f"{frontmatter}\n# Pending Question\n")
 
     def clear_pending_question(self) -> None:
         """Remove the pending question file after it's been answered."""
@@ -388,7 +380,7 @@ class MarkdownStore:
                 try:
                     profile.last_updated = datetime.fromisoformat(date_str)
                 except (ValueError, IndexError):
-                    pass
+                    pass  # Malformed date — leave last_updated as None
                 break
 
         return profile
@@ -423,10 +415,7 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_knowledge_entry(self, path: Path) -> KnowledgeEntry:
-        """Parse a knowledge entry from markdown.
-
-        Handles both YAML frontmatter format and legacy inline metadata.
-        """
+        """Parse a knowledge entry from markdown with YAML frontmatter."""
         text = path.read_text()
         topic_name = path.parent.name
         # Map directory names back to QuestionTopic
@@ -439,77 +428,24 @@ class MarkdownStore:
         }
         topic = topic_reverse.get(topic_name, QuestionTopic.GENERAL)
 
-        # Try frontmatter first
         metadata, body = parse_frontmatter(text)
+        if not metadata:
+            raise ValueError(f"Knowledge entry missing frontmatter: {path}")
 
-        if metadata:
-            # Frontmatter format — extract from YAML
-            title = metadata.get("title", path.stem.replace("-", " ").replace("_", " ").title())
-            topic_str = metadata.get("topic", topic_name)
-            try:
-                topic = QuestionTopic(topic_str)
-            except ValueError:
-                topic = topic_reverse.get(topic_str, QuestionTopic.GENERAL)
-            source = metadata.get("source", "import")
-            created_at = None
-            date_str = metadata.get("date")
-            if date_str:
-                try:
-                    created_at = date.fromisoformat(str(date_str))
-                except ValueError:
-                    pass
-            raw_tags = metadata.get("tags", [])
-            tags = raw_tags if isinstance(raw_tags, list) else [raw_tags]
-            content = body.strip()
-            return KnowledgeEntry(
-                title=title,
-                content=content,
-                topic=topic,
-                source=source,
-                created_at=created_at,
-                tags=tags,
-            )
-
-        # Legacy format — parse from markdown structure
-        title = path.stem.replace("-", " ").replace("_", " ").title()
-        for line in text.split("\n"):
-            if line.startswith("# "):
-                title = line.lstrip("#").strip()
-                break
-
-        source = "import"
-        created_at: date | None = None
-        tags: list[str] = []
-        for line in text.split("\n"):
-            if line.startswith("*") and "Topic:" in line:
-                meta = line.strip("*").strip()
-                for part in meta.split("|"):
-                    part = part.strip()
-                    if part.startswith("Source:"):
-                        source = part.split(":", 1)[1].strip()
-                    elif part.startswith("Date:"):
-                        date_str = part.split(":", 1)[1].strip()
-                        try:
-                            created_at = date.fromisoformat(date_str)
-                        except ValueError:
-                            pass
-                    elif part.startswith("Tags:"):
-                        tags = [
-                            t.strip() for t in part.split(":", 1)[1].strip().split(",") if t.strip()
-                        ]
-                break
-
-        content_lines: list[str] = []
-        in_content = False
-        for line in text.split("\n"):
-            if in_content:
-                content_lines.append(line)
-            elif line.startswith("*") and "Topic:" in line:
-                in_content = True
-                continue
-
-        content = "\n".join(content_lines).strip() if content_lines else text.strip()
-
+        title = metadata.get("title", path.stem.replace("-", " ").replace("_", " ").title())
+        topic_str = metadata.get("topic", topic_name)
+        try:
+            topic = QuestionTopic(topic_str)
+        except ValueError:
+            topic = topic_reverse.get(topic_str, QuestionTopic.GENERAL)
+        source = metadata.get("source", "import")
+        created_at = None
+        date_str = metadata.get("date")
+        if date_str:
+            created_at = date.fromisoformat(str(date_str))
+        raw_tags = metadata.get("tags", [])
+        tags = raw_tags if isinstance(raw_tags, list) else [raw_tags]
+        content = body.strip()
         return KnowledgeEntry(
             title=title,
             content=content,
@@ -534,10 +470,7 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_daily_log(self, path: Path) -> DailyLog:
-        """Parse a daily log from markdown.
-
-        Handles both YAML frontmatter format and legacy format.
-        """
+        """Parse a daily log from markdown with YAML frontmatter."""
         text = path.read_text()
 
         # Strip frontmatter if present
@@ -548,10 +481,7 @@ class MarkdownStore:
         if metadata and "date" in metadata:
             # Use frontmatter date, default to midnight if no time
             date_str = str(metadata["date"])
-            try:
-                log_timestamp = datetime.strptime(date_str, "%Y-%m-%d")
-            except ValueError:
-                pass
+            log_timestamp = datetime.strptime(date_str, "%Y-%m-%d")
 
         for line in body.split("\n"):
             if line.startswith("# ") and "—" in line:
@@ -562,7 +492,7 @@ class MarkdownStore:
                     try:
                         log_timestamp = datetime.strptime(ts_str, "%Y-%m-%d")
                     except ValueError:
-                        pass
+                        pass  # Neither format matched — keep frontmatter-derived timestamp
                 break
 
         # Parse slug from filename: "2026-06-06T14-30-skill-testing.md"
@@ -586,7 +516,7 @@ class MarkdownStore:
                     try:
                         question_topic = QuestionTopic(topic_match.group(1))
                     except ValueError:
-                        pass
+                        pass  # Unknown topic — keep default GENERAL
                 colon_idx = line.find(":")
                 if colon_idx >= 0:
                     question = line[colon_idx + 1 :].strip()

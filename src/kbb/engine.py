@@ -225,9 +225,5 @@ class KBPEngine:
         return self._store.read_pending_question()
 
     def sync_obsidian_vault(self) -> None:
-        """Regenerate all daily notes and Obsidian config.
-
-        Useful for one-time migration or manual resync after upgrading
-        from the legacy format to frontmatter-based storage.
-        """
+        """Regenerate Obsidian vault config and aggregate daily notes."""
         self._store.sync_obsidian_vault()

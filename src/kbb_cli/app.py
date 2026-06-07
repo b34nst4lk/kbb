@@ -391,10 +391,7 @@ def status() -> None:
 
 @app.command(name="sync-vault")
 def sync_vault() -> None:
-    """Regenerate Obsidian vault config and aggregate daily notes.
-
-    Useful after upgrading from a legacy format or for manual resync.
-    """
+    """Regenerate Obsidian vault config and aggregate daily notes."""
     engine = _get_engine()
     engine.sync_obsidian_vault()
     console.print("[green]Vault synced.[/green] Obsidian config and daily notes regenerated.")
