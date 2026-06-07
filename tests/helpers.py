@@ -16,6 +16,7 @@ class MockProvider:
     def __init__(self, responses: dict[str, str] | None = None) -> None:
         self._responses = responses or {}
         self._calls: list[tuple[str, str]] = []  # (system, prompt)
+        self._raise_on: dict[str, Exception] = {}  # match_key -> Exception to raise
 
     @property
     def name(self) -> str:
@@ -25,6 +26,12 @@ class MockProvider:
         self, prompt: str, *, system: str = "", json_schema: dict | None = None
     ) -> str:
         self._calls.append((system, prompt))
+
+        # Check if this prompt should raise an exception
+        for key, exc in self._raise_on.items():
+            if key in system.lower():
+                raise exc
+
         # Match on unique phrases from system prompts to avoid false positives.
         # Both profile and question prompts start with "precise JSON generator",
         # so we match on the distinguishing second phrase.
