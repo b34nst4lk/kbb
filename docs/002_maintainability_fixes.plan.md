@@ -245,11 +245,11 @@ def _get_question(engine: KBPEngine) -> Question:
 
 Replace the three blocks with `question = _get_question(engine)`, with `try/except` at the call sites.
 
-### Phase 12: Fix date import shadowing (minor) — `partials.py`
+### Phase 12: Fix date import shadowing (minor) — `partials.py` ✅ DONE (completed as part of Phase 1)
 
 **Problem**: `date` parameter shadows `datetime.date` import, forcing `from datetime import date as date_type`.
 
-**Fix**: Rename the parameter from `date: str` to `date_str: str` (matching `api.py` convention), remove the local import.
+**Fix**: Renamed `date: str` to `date_str: str` and removed the local import. Done inline with Phase 1.
 
 ### Phase 13: Remove dead code (M3 partial) — `models_web.py`
 
@@ -257,11 +257,11 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
 
 **Fix**: Delete the file. If Pydantic form schemas are needed later, they can be recreated from the inline schemas in `api.py`.
 
-### Phase 14: Move local import to module level (minor) — `api.py`
+### Phase 14: Move local import to module level (minor) — `api.py` ✅ DONE (completed as part of Phase 1)
 
 **Problem**: `Question` is imported inside a function body.
 
-**Fix**: Move `from kbb.models import Question` to the module-level imports at the top of `api.py`.
+**Fix**: Moved `from kbb.models import Question` to module-level imports at the top of `api.py`. Done inline with Phase 1.
 
 ### Phase 15: Remove unused `request: Request` params (minor) — `pages.py`, `partials.py`
 
@@ -291,19 +291,31 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
 
 **Fix**: Use direct class references (`FasterWhisperProvider(...)`, etc.) instead of `from kbb.transcribe import ...`.
 
-### Phase 20: Clean up `profile.name` null handling (minor) — `pages.py`
+### Phase 20: Clean up `profile.name` null handling (minor) — `pages.py` ✅ DONE (completed as part of Phase 1)
 
 **Problem**: `profile.name if profile else None` is dead code — `read_structured_profile()` always returns a `UserProfile`, never `None`.
 
-**Fix**: Replace with `profile.name or ""` for consistency with `api.py`.
+**Fix**: Replaced with `profile.name or ""` for consistency with `api.py`. Done inline with Phase 1.
 
 ## Task List and Test Cases
 
-- [ ] **Phase 1: Input validation in web routes**
-  - [ ] `test_api_transcribe_invalid_topic`: POST with invalid topic → 200 with GENERAL fallback
-  - [ ] `test_api_transcribe_invalid_date`: GET logs with invalid date → 400
-  - [ ] `test_partial_transcribe_invalid_topic`: POST with invalid topic → falls back to GENERAL
-  - [ ] `test_pages_invalid_date`: GET `/daily/logs/invalid-date` → error page (not 500)
+- [x] **Phase 1: Input validation in web routes** ✅
+  - [x] `api.py`: Wrapped `QuestionTopic()` calls in try/except with `QuestionTopic.GENERAL` fallback (lines 163, 195)
+  - [x] `api.py`: Wrapped `date.fromisoformat()` in try/except with `HTTPException(400)` (line 215)
+  - [x] `api.py`: Moved `from kbb.models import Question` from function-local to module-level import (line 17)
+  - [x] `partials.py`: Wrapped `QuestionTopic()` calls in try/except with `QuestionTopic.GENERAL` fallback (lines 67, 167)
+  - [x] `partials.py`: Wrapped `LLMProviderName()` in try/except → shows error alert with valid options (line 268)
+  - [x] `partials.py`: Renamed `date: str` parameter to `date_str: str`, removed `date_type` local import, wrapped `date.fromisoformat()` with fallback to today (line 208)
+  - [x] `pages.py`: Wrapped `date.fromisoformat()` in try/except → renders error page with 400 status (line 87)
+  - [x] `pages.py`: Fixed `profile.name if profile else None` → `profile.name or ""` (line 35)
+  - [x] **Tests**: `tests/test_web/test_input_validation.py` — 16 tests covering:
+    - [x] `TestApiTopicValidation`: invalid topic falls back to "general" (2 tests), invalid topic in response falls back (1 test)
+    - [x] `TestPartialTopicValidation`: invalid topic in response/import falls back (2 tests)
+    - [x] `TestApiDateValidation`: invalid date returns 400, valid date returns 200, no date returns 200 (3 tests)
+    - [x] `TestPartialDateValidation`: invalid date falls back to today, valid/no date works (3 tests)
+    - [x] `TestPagesDateValidation`: invalid date returns 400 error page, valid date returns 200 (2 tests)
+    - [x] `TestSettingsProviderValidation`: invalid provider shows error with valid options, valid provider succeeds (2 tests)
+    - [x] `TestProfileNameHandling`: dashboard uses empty string for missing profile name (1 test)
 
 - [ ] **Phase 2: Topic mapping consolidation**
   - [ ] `test_topic_directory_property`: `QuestionTopic.EDUCATION.directory == "education"`, `QuestionTopic.OPINION.directory == "general"`
@@ -372,3 +384,26 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
 5. Manual: start web app, submit form with invalid topic → falls back gracefully
 6. Manual: start web app, navigate to `/daily/logs/invalid` → error page (not 500)
 7. Manual: `uv run kbb status` — confirm no regressions
+
+## Deviations from Plan
+
+### Phase 1 deviations
+
+1. **`LLMProviderName()` validation returns error, not fallback**: The plan proposed wrapping `LLMProviderName()` in try/except with a fallback, matching the `QuestionTopic()` pattern. User feedback changed this: for `LLMProviderName` in `save_settings`, the fix returns an **error alert** listing valid providers (e.g., `"Invalid LLM provider: foo. Valid options: anthropic, openai, ollama"`) rather than silently falling back. This is because an invalid provider is a configuration error the user should correct, not a default to paper over. `QuestionTopic()` still falls back to `GENERAL` because topic is less critical and a reasonable default exists.
+
+2. **`Question` import moved to module-level in `api.py`**: The plan (Phase 14) called for moving the function-local `from kbb.models import Question` import to module-level. This was done as part of Phase 1 since it was in the same file and touched during the `QuestionTopic()` validation changes. Phase 14 is now marked complete as well.
+
+3. **Date import shadowing fixed as part of Phase 1**: The plan had Phase 12 (rename `date` parameter to `date_str`) as a separate phase, but since `partials.py` was already being edited for Phase 1, the shadowing fix was done inline. Phase 12 is now marked complete.
+
+4. **`profile.name` null handling fixed as part of Phase 1**: The plan had Phase 20 for this fix. Since `pages.py` was already being edited for Phase 1, the `profile.name if profile else None` → `profile.name or ""` fix was done inline. Phase 20 is now marked complete.
+
+5. **Tests were written alongside the implementation**: The plan originally said "No new test cases added yet" but 16 tests were written in `tests/test_web/test_input_validation.py` covering all Phase 1 behavioral changes. Full suite at 149 tests (133 original + 16 new).
+
+### Cross-phase impact assessment
+
+Phase 1 deviations affect subsequent phases in these ways:
+
+- **Phase 5 (move SUPPORTED_AUDIO_EXTENSIONS)**: `api.py` and `partials.py` now import `SUPPORTED_AUDIO_EXTENSIONS` from `kbb.engine`. After Phase 5 moves the constant to `kbb.transcribe` and re-exports from `kbb.engine`, these imports will still work. However, the plan should update both files to import from the canonical source `kbb.transcribe` rather than relying on the re-export.
+- **Phase 15 (remove unused request params)** and **Phase 16 (transcription settings)**: Both touch `partials.py`. The `date_str` rename and `LLMProviderName` error handling from Phase 1 are at different locations, so no merge conflicts.
+- **Phase 8 (logging)** and **Phase 2 (topic mapping)**: Both touch `markdown_store.py`. No overlap with Phase 1 changes.
+- **No other phases are affected** by Phase 1 deviations. All interface contracts (function signatures, route signatures, data formats) remain unchanged.
