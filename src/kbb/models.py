@@ -10,7 +10,13 @@ from pathlib import Path
 
 
 class QuestionTopic(str, Enum):
-    """Topics for knowledge extraction questions."""
+    """Topics for knowledge extraction questions.
+
+    Note: OPINION, DECISION, and PROCESS map to the "general" directory.
+    When reading files, the topic is preserved via YAML frontmatter, so
+    these values survive round-trips. The directory-based fallback
+    (from_directory) maps "general" → GENERAL, losing the original value.
+    """
 
     EDUCATION = "education"
     WORK_EXPERIENCE = "work_experience"
@@ -20,6 +26,36 @@ class QuestionTopic(str, Enum):
     DECISION = "decision"
     PROCESS = "process"
     GENERAL = "general"
+
+    @property
+    def directory(self) -> str:
+        """Return the filesystem directory name for this topic."""
+        _dirs: dict[str, str] = {
+            "education": "education",
+            "work_experience": "work",
+            "life_experience": "life",
+            "skill": "skills",
+            "opinion": "general",
+            "decision": "general",
+            "process": "general",
+            "general": "general",
+        }
+        return _dirs[self.value]
+
+    @classmethod
+    def from_directory(cls, dir_name: str) -> QuestionTopic:
+        """Return the QuestionTopic for a filesystem directory name.
+
+        Unknown directory names default to GENERAL.
+        """
+        _reverse: dict[str, QuestionTopic] = {
+            "education": cls.EDUCATION,
+            "work": cls.WORK_EXPERIENCE,
+            "life": cls.LIFE_EXPERIENCE,
+            "skills": cls.SKILL,
+            "general": cls.GENERAL,
+        }
+        return _reverse.get(dir_name, cls.GENERAL)
 
 
 class LLMProviderName(str, Enum):

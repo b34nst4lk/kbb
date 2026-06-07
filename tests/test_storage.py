@@ -100,6 +100,57 @@ class TestKnowledgeEntries:
         with pytest.raises(ValueError, match="missing frontmatter"):
             mock_store._parse_knowledge_entry(topic_dir / "no-frontmatter.md")
 
+    def test_knowledge_entry_collapsed_topic_preserved_via_frontmatter(
+        self, mock_store: MarkdownStore
+    ):
+        """OPINION, DECISION, PROCESS are written to 'general' directory but
+        the original topic IS preserved through YAML frontmatter."""
+        entry = KnowledgeEntry(
+            title="Opinion on Testing",
+            content="I think pytest is great",
+            topic=QuestionTopic.OPINION,
+            source="daily_log",
+            created_at=date(2026, 6, 7),
+        )
+        path = mock_store.write_knowledge_entry(entry)
+        # Written to 'general' directory (collapsed topic directory)
+        assert "general" in str(path)
+
+        entries = mock_store.list_knowledge_entries()
+        assert len(entries) == 1
+        # Topic is preserved via frontmatter — OPINION survives the round-trip
+        assert entries[0].topic == QuestionTopic.OPINION
+        assert entries[0].title == "Opinion on Testing"
+
+    def test_knowledge_entry_direct_topic_round_trips(self, mock_store: MarkdownStore):
+        """Topics with their own directories round-trip correctly."""
+        entry = KnowledgeEntry(
+            title="Education Notes",
+            content="I studied CS",
+            topic=QuestionTopic.EDUCATION,
+            source="import",
+            created_at=date(2026, 6, 7),
+        )
+        mock_store.write_knowledge_entry(entry)
+
+        entries = mock_store.list_knowledge_entries()
+        assert len(entries) == 1
+        assert entries[0].topic == QuestionTopic.EDUCATION
+
+    def test_knowledge_entry_topic_fallback_to_directory(self, mock_store: MarkdownStore):
+        """When frontmatter topic is invalid, falls back to directory-based lookup."""
+        entry = KnowledgeEntry(
+            title="Education Notes",
+            content="I studied CS",
+            topic=QuestionTopic.EDUCATION,
+            source="import",
+            created_at=date(2026, 6, 7),
+        )
+        mock_store.write_knowledge_entry(entry)
+        entries = mock_store.list_knowledge_entries()
+        assert len(entries) == 1
+        assert entries[0].topic == QuestionTopic.EDUCATION
+
 
 class TestDailyLogs:
     def test_write_and_read_daily_log(self, mock_store: MarkdownStore, sample_daily_log: DailyLog):

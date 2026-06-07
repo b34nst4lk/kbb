@@ -317,11 +317,20 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
     - [x] `TestSettingsProviderValidation`: invalid provider shows error with valid options, valid provider succeeds (2 tests)
     - [x] `TestProfileNameHandling`: dashboard uses empty string for missing profile name (1 test)
 
-- [ ] **Phase 2: Topic mapping consolidation**
-  - [ ] `test_topic_directory_property`: `QuestionTopic.EDUCATION.directory == "education"`, `QuestionTopic.OPINION.directory == "general"`
-  - [ ] `test_topic_from_directory`: `QuestionTopic.from_directory("work") == QuestionTopic.WORK_EXPERIENCE`
-  - [ ] `test_topic_from_directory_unknown`: `QuestionTopic.from_directory("nonexistent") == QuestionTopic.GENERAL`
-  - [ ] `test_knowledge_write_read_roundtrip`: Write entry with `OPINION` topic, read it back, topic is `GENERAL` (documented data loss)
+- [x] **Phase 2: Topic mapping consolidation** ✅
+  - [x] `QuestionTopic.directory` property added to `models.py` — maps topics to filesystem directory names
+  - [x] `QuestionTopic.from_directory()` classmethod added to `models.py` — reverse lookup from directory to topic
+  - [x] `TOPIC_DIRS` removed from `MarkdownStore`, replaced with `entry.topic.directory`
+  - [x] `topic_reverse` dict removed from `_parse_knowledge_entry`, replaced with `QuestionTopic.from_directory()`
+  - [x] `test_directory_direct_topics`: EDUCATION/work, SKILL/skills, etc.
+  - [x] `test_directory_collapsed_topics`: OPINION, DECISION, PROCESS all map to "general"
+  - [x] `test_from_directory`: Directory names map back correctly
+  - [x] `test_from_directory_unknown`: Unknown defaults to GENERAL
+  - [x] `test_directory_round_trip_lossy`: OPINION/DECISION/PROCESS lose their value through directory-only path
+  - [x] `test_directory_round_trip_direct`: Direct topics round-trip correctly
+  - [x] `test_knowledge_entry_collapsed_topic_preserved_via_frontmatter`: OPINION round-trips correctly via frontmatter
+  - [x] `test_knowledge_entry_topic_fallback_to_directory`: Fallback path works for valid entries
+  - [x] Docstring updated to clarify that frontmatter preserves topic, `from_directory` is the only lossy path
 
 - [ ] **Phase 3: Slug consolidation**
   - [ ] `test_slugify_utility`: `slugify("Hello World!") == "hello-world"`, `slugify("a" * 100) == "a" * 80`
@@ -398,6 +407,16 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
 4. **`profile.name` null handling fixed as part of Phase 1**: The plan had Phase 20 for this fix. Since `pages.py` was already being edited for Phase 1, the `profile.name if profile else None` → `profile.name or ""` fix was done inline. Phase 20 is now marked complete.
 
 5. **Tests were written alongside the implementation**: The plan originally said "No new test cases added yet" but 16 tests were written in `tests/test_web/test_input_validation.py` covering all Phase 1 behavioral changes. Full suite at 149 tests (133 original + 16 new).
+
+### Phase 2 deviations
+
+1. **Topic data loss was overstated**: The original review (C3) described OPINION/DECISION/PROCESS topics as suffering data loss when round-tripped through the "general" directory. In practice, `_parse_knowledge_entry` reads the `topic` field from YAML frontmatter first (line 417), and `QuestionTopic("opinion")` succeeds, so the original topic IS preserved. The lossy path only triggers when frontmatter has an invalid or missing `topic` field, falling back to `QuestionTopic.from_directory()` which maps "general" → GENERAL.
+
+2. **Test corrected**: The plan's task `test_knowledge_write_read_roundtrip` asserted that an OPINION entry round-trips as GENERAL. The actual behavior is that it round-trips as OPINION (preserved via frontmatter). The test was replaced with two tests:
+   - `test_knowledge_entry_collapsed_topic_preserved_via_frontmatter`: Verifies OPINION entries round-trip correctly (topic preserved)
+   - `test_knowledge_entry_topic_fallback_to_directory`: Verifies the fallback path works for valid entries
+
+3. **Docstring updated**: The `QuestionTopic` class docstring was updated to clarify that frontmatter preserves the topic value, and the directory-based fallback (`from_directory`) is the only lossy path.
 
 ### Cross-phase impact assessment
 

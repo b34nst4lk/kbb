@@ -16,17 +16,6 @@ from kbb.obsidian import format_frontmatter, generate_obsidian_config, parse_fro
 class MarkdownStore:
     """Reads and writes all data as markdown files on disk."""
 
-    TOPIC_DIRS: dict[QuestionTopic, str] = {
-        QuestionTopic.EDUCATION: "education",
-        QuestionTopic.WORK_EXPERIENCE: "work",
-        QuestionTopic.LIFE_EXPERIENCE: "life",
-        QuestionTopic.SKILL: "skills",
-        QuestionTopic.OPINION: "general",
-        QuestionTopic.DECISION: "general",
-        QuestionTopic.PROCESS: "general",
-        QuestionTopic.GENERAL: "general",
-    }
-
     def __init__(self, data_dir: Path) -> None:
         self._data_dir = data_dir
         self._ensure_dirs()
@@ -122,7 +111,7 @@ class MarkdownStore:
         If a file with the same slug already exists, appends a date suffix.
         If that also exists, appends a counter.
         """
-        topic_dir_name = self.TOPIC_DIRS.get(entry.topic, "general")
+        topic_dir_name = entry.topic.directory
         topic_dir = self._data_dir / "knowledge" / topic_dir_name
         topic_dir.mkdir(parents=True, exist_ok=True)
         slug = self._slugify(entry.title)
@@ -418,15 +407,7 @@ class MarkdownStore:
         """Parse a knowledge entry from markdown with YAML frontmatter."""
         text = path.read_text()
         topic_name = path.parent.name
-        # Map directory names back to QuestionTopic
-        topic_reverse = {
-            "education": QuestionTopic.EDUCATION,
-            "work": QuestionTopic.WORK_EXPERIENCE,
-            "life": QuestionTopic.LIFE_EXPERIENCE,
-            "skills": QuestionTopic.SKILL,
-            "general": QuestionTopic.GENERAL,
-        }
-        topic = topic_reverse.get(topic_name, QuestionTopic.GENERAL)
+        topic = QuestionTopic.from_directory(topic_name)
 
         metadata, body = parse_frontmatter(text)
         if not metadata:
@@ -437,7 +418,7 @@ class MarkdownStore:
         try:
             topic = QuestionTopic(topic_str)
         except ValueError:
-            topic = topic_reverse.get(topic_str, QuestionTopic.GENERAL)
+            topic = QuestionTopic.from_directory(topic_str)
         source = metadata.get("source", "import")
         created_at = None
         date_str = metadata.get("date")

@@ -28,6 +28,66 @@ class TestQuestionTopic:
         assert QuestionTopic("education") == QuestionTopic.EDUCATION
         assert QuestionTopic("general") == QuestionTopic.GENERAL
 
+    def test_directory_direct_topics(self):
+        """Topics with their own directories map correctly."""
+        assert QuestionTopic.EDUCATION.directory == "education"
+        assert QuestionTopic.WORK_EXPERIENCE.directory == "work"
+        assert QuestionTopic.LIFE_EXPERIENCE.directory == "life"
+        assert QuestionTopic.SKILL.directory == "skills"
+        assert QuestionTopic.GENERAL.directory == "general"
+
+    def test_directory_collapsed_topics(self):
+        """OPINION, DECISION, and PROCESS collapse to the 'general' directory."""
+        assert QuestionTopic.OPINION.directory == "general"
+        assert QuestionTopic.DECISION.directory == "general"
+        assert QuestionTopic.PROCESS.directory == "general"
+
+    def test_from_directory(self):
+        """Directory names map back to the correct topics."""
+        assert QuestionTopic.from_directory("education") == QuestionTopic.EDUCATION
+        assert QuestionTopic.from_directory("work") == QuestionTopic.WORK_EXPERIENCE
+        assert QuestionTopic.from_directory("life") == QuestionTopic.LIFE_EXPERIENCE
+        assert QuestionTopic.from_directory("skills") == QuestionTopic.SKILL
+        assert QuestionTopic.from_directory("general") == QuestionTopic.GENERAL
+
+    def test_from_directory_unknown(self):
+        """Unknown directory names default to GENERAL."""
+        assert QuestionTopic.from_directory("unknown") == QuestionTopic.GENERAL
+        assert QuestionTopic.from_directory("random") == QuestionTopic.GENERAL
+
+    def test_directory_round_trip_lossy(self):
+        """OPINION, DECISION, and PROCESS cannot round-trip through directory.
+
+        These topics map to "general" but from_directory("general") returns GENERAL,
+        not the original topic. This is intentional: the original topic is lost
+        when the knowledge entry is stored in the "general" directory.
+        """
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.OPINION.directory) == QuestionTopic.GENERAL
+        )
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.DECISION.directory) == QuestionTopic.GENERAL
+        )
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.PROCESS.directory) == QuestionTopic.GENERAL
+        )
+
+    def test_directory_round_trip_direct(self):
+        """Topics with their own directories round-trip correctly."""
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.EDUCATION.directory)
+            == QuestionTopic.EDUCATION
+        )
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.WORK_EXPERIENCE.directory)
+            == QuestionTopic.WORK_EXPERIENCE
+        )
+        assert (
+            QuestionTopic.from_directory(QuestionTopic.LIFE_EXPERIENCE.directory)
+            == QuestionTopic.LIFE_EXPERIENCE
+        )
+        assert QuestionTopic.from_directory(QuestionTopic.SKILL.directory) == QuestionTopic.SKILL
+
 
 class TestUserProfile:
     def test_defaults(self):
