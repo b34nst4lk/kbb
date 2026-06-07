@@ -9,7 +9,7 @@ import re
 from datetime import date, datetime
 from pathlib import Path
 
-from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile
+from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile, slugify
 from kbb.obsidian import format_frontmatter, generate_obsidian_config, parse_frontmatter
 
 
@@ -322,10 +322,12 @@ class MarkdownStore:
 
     @staticmethod
     def _slugify(text: str) -> str:
-        """Convert text to a URL-safe slug for filenames."""
-        slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-        # Limit length to avoid excessively long filenames
-        return slug[:80] if len(slug) > 80 else slug
+        """Convert text to a URL-safe slug for filenames.
+
+        Delegates to the module-level ``slugify`` utility. Kept as a
+        static method for backward compatibility with existing callers.
+        """
+        return slugify(text)
 
     def _parse_structured_profile(self, text: str) -> UserProfile:
         """Parse structured profile markdown into UserProfile."""

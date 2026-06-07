@@ -158,6 +158,8 @@ class KBPEngine:
         self._store.write_daily_log(log)
 
         # Also write the recorded entry as a knowledge entry
+        # title=slug is intentional: the LLM-generated slug becomes the
+        # canonical title for daily-log knowledge entries.
         entry = KnowledgeEntry(
             title=slug,
             content=recorded_entry,

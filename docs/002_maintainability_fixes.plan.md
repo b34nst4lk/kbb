@@ -332,10 +332,14 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
   - [x] `test_knowledge_entry_topic_fallback_to_directory`: Fallback path works for valid entries
   - [x] Docstring updated to clarify that frontmatter preserves topic, `from_directory` is the only lossy path
 
-- [ ] **Phase 3: Slug consolidation**
-  - [ ] `test_slugify_utility`: `slugify("Hello World!") == "hello-world"`, `slugify("a" * 100) == "a" * 80`
-  - [ ] `test_knowledge_entry_slug_uses_slugify`: Verify `KnowledgeEntry.slug` delegates to `slugify()`
-  - [ ] `test_markdown_store_slugify_uses_slugify`: Verify `_slugify` delegates to `slugify()`
+- [x] **Phase 3: Slug consolidation** ✅
+  - [x] Added `slugify()` module-level utility in `models.py`
+  - [x] `KnowledgeEntry.slug` delegates to `slugify(self.title)` with docstring noting it's computed
+  - [x] `MarkdownStore._slugify` delegates to `slugify(text)` with docstring noting it's for filenames
+  - [x] Comment added in `engine.py` noting `title=slug` is intentional
+  - [x] `test_slugify_utility`: basic, special chars, truncation, custom max_length, leading/trailing hyphens (5 tests)
+  - [x] `test_knowledge_entry_slug_delegates`: Verifies `KnowledgeEntry.slug` delegates to `slugify()`
+  - [x] `test_slugify_delegates_to_models`: Verifies `MarkdownStore._slugify` delegates to `models.slugify`
 
 - [ ] **Phase 4: Exception chaining**
   - [ ] `test_transcription_client_fallback_error_chained`: Both fail → exception chain includes fallback error

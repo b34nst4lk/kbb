@@ -322,3 +322,9 @@ class TestSlugify:
         long_title = "A" * 200
         result = MarkdownStore._slugify(long_title)
         assert len(result) <= 80
+
+    def test_slugify_delegates_to_models(self):
+        """MarkdownStore._slugify delegates to models.slugify."""
+        from kbb.models import slugify
+
+        assert MarkdownStore._slugify("Hello World") == slugify("Hello World")

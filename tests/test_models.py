@@ -11,6 +11,7 @@ from kbb.models import (
     QuestionTopic,
     UserProfile,
 )
+from kbb.models import slugify
 
 
 class TestQuestionTopic:
@@ -87,6 +88,33 @@ class TestQuestionTopic:
             == QuestionTopic.LIFE_EXPERIENCE
         )
         assert QuestionTopic.from_directory(QuestionTopic.SKILL.directory) == QuestionTopic.SKILL
+
+
+class TestSlugify:
+    def test_basic_slugify(self):
+        assert slugify("My Testing Philosophy") == "my-testing-philosophy"
+
+    def test_special_characters(self):
+        result = slugify("What's the best approach? (2024)")
+        assert "?" not in result
+        assert "(" not in result
+
+    def test_long_title_truncation(self):
+        long_title = "A" * 200
+        result = slugify(long_title)
+        assert len(result) <= 80
+
+    def test_custom_max_length(self):
+        result = slugify("Hello World", max_length=5)
+        assert len(result) <= 5
+
+    def test_leading_trailing_hyphens_stripped(self):
+        assert slugify("---hello---") == "hello"
+
+    def test_knowledge_entry_slug_delegates(self):
+        """KnowledgeEntry.slug delegates to slugify()."""
+        entry = KnowledgeEntry(title="My Testing Philosophy", content="content")
+        assert entry.slug == slugify("My Testing Philosophy")
 
 
 class TestUserProfile:

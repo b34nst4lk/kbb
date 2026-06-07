@@ -9,6 +9,16 @@ from enum import Enum
 from pathlib import Path
 
 
+def slugify(text: str, max_length: int = 80) -> str:
+    """Convert text to a URL-safe slug. Truncates to max_length.
+
+    Replaces non-alphanumeric characters with hyphens, lowercases,
+    strips leading/trailing hyphens, and truncates to max_length.
+    """
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug[:max_length] if len(slug) > max_length else slug
+
+
 class QuestionTopic(str, Enum):
     """Topics for knowledge extraction questions.
 
@@ -116,9 +126,12 @@ class KnowledgeEntry:
 
     @property
     def slug(self) -> str:
-        """URL-safe slug derived from the title."""
-        slug = re.sub(r"[^a-z0-9]+", "-", self.title.lower()).strip("-")
-        return slug[:80] if len(slug) > 80 else slug
+        """URL-safe slug derived from the title.
+
+        This is a computed property, not stored. The title is the
+        canonical source; the slug is derived on access.
+        """
+        return slugify(self.title)
 
 
 @dataclass
