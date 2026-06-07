@@ -23,7 +23,7 @@ router = APIRouter()
 def dashboard(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     profile = engine.get_profile()
     entries = engine.get_knowledge_entries()
     log_paths = engine.get_all_daily_logs()
@@ -43,7 +43,7 @@ def dashboard(
 def profile_page(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     profile = engine.get_profile()
     raw_profile = engine.get_raw_profile()
     template = templates.get_template("pages/profile.html")
@@ -55,7 +55,7 @@ def profile_page(
 def daily_question_page(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     pending = engine.get_pending_question()
     template = templates.get_template("pages/daily/question.html")
     html = template.render(pending_question=pending)
@@ -66,7 +66,7 @@ def daily_question_page(
 def daily_logs_list(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     log_paths = engine.get_all_daily_logs()
     template = templates.get_template("pages/daily/log_list.html")
     html = template.render(log_paths=log_paths)
@@ -78,7 +78,7 @@ def daily_logs_by_date(
     date_str: str,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     try:
         d = date.fromisoformat(date_str)
     except ValueError:
@@ -95,7 +95,7 @@ def daily_logs_by_date(
 def knowledge_list(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     entries = engine.get_knowledge_entries()
     template = templates.get_template("pages/knowledge/list.html")
     html = template.render(entries=entries)
@@ -103,7 +103,7 @@ def knowledge_list(
 
 
 @router.get("/knowledge/import")
-def knowledge_import_form(templates: Environment = Depends(get_templates)):
+def knowledge_import_form(templates: Environment = Depends(get_templates)) -> HTMLResponse:
     template = templates.get_template("pages/knowledge/import_form.html")
     html = template.render()
     return HTMLResponse(content=html)
@@ -114,7 +114,7 @@ def knowledge_detail(
     slug: str,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     entry = engine.get_knowledge_entry(slug)
     if not entry:
         return HTMLResponse(content="Knowledge entry not found.", status_code=404)
@@ -127,7 +127,7 @@ def knowledge_detail(
 def settings_page(
     config: WebConfig = Depends(get_web_config),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     providers = [p.value for p in LLMProviderName]
     transcription_providers = [p.value for p in TranscriptionProviderName]
     template = templates.get_template("pages/settings.html")

@@ -89,7 +89,7 @@ class KnowledgeImportRequest(BaseModel):
 
 
 @router.get("/status")
-def api_status(engine: KBPEngine = Depends(get_engine)):
+def api_status(engine: KBPEngine = Depends(get_engine)) -> StatusResponse:
     profile = engine.get_profile()
     entries = engine.get_knowledge_entries()
     log_paths = engine.get_all_daily_logs()
@@ -112,7 +112,7 @@ def api_status(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.get("/profile")
-def api_get_profile(engine: KBPEngine = Depends(get_engine)):
+def api_get_profile(engine: KBPEngine = Depends(get_engine)) -> ProfileResponse:
     profile = engine.get_profile()
     raw = engine.get_raw_profile()
     return ProfileResponse(
@@ -126,7 +126,9 @@ def api_get_profile(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.post("/profile")
-async def api_create_profile(body: ProfileCreateRequest, engine: KBPEngine = Depends(get_engine)):
+async def api_create_profile(
+    body: ProfileCreateRequest, engine: KBPEngine = Depends(get_engine)
+) -> ProfileResponse:
     profile = await engine.setup_profile_from_text(body.raw_text)
     return ProfileResponse(
         name=profile.name or "",
@@ -139,7 +141,7 @@ async def api_create_profile(body: ProfileCreateRequest, engine: KBPEngine = Dep
 
 
 @router.get("/knowledge")
-def api_list_knowledge(engine: KBPEngine = Depends(get_engine)):
+def api_list_knowledge(engine: KBPEngine = Depends(get_engine)) -> list[KnowledgeEntryResponse]:
     entries = engine.get_knowledge_entries()
     return [
         KnowledgeEntryResponse(
@@ -157,7 +159,7 @@ def api_list_knowledge(engine: KBPEngine = Depends(get_engine)):
 @router.post("/knowledge")
 async def api_import_knowledge(
     body: KnowledgeImportRequest, engine: KBPEngine = Depends(get_engine)
-):
+) -> KnowledgeEntryResponse:
     try:
         topic_enum = QuestionTopic(body.topic)
     except ValueError:
@@ -178,7 +180,7 @@ async def api_import_knowledge(
 
 
 @router.get("/daily/question")
-async def api_get_question(engine: KBPEngine = Depends(get_engine)):
+async def api_get_question(engine: KBPEngine = Depends(get_engine)) -> QuestionResponse:
     pending = engine.get_pending_question()
     if pending:
         question = pending
@@ -192,7 +194,9 @@ async def api_get_question(engine: KBPEngine = Depends(get_engine)):
 
 
 @router.post("/daily/response")
-async def api_record_response(body: ResponseCreateRequest, engine: KBPEngine = Depends(get_engine)):
+async def api_record_response(
+    body: ResponseCreateRequest, engine: KBPEngine = Depends(get_engine)
+) -> DailyLogResponse:
     try:
         topic_enum = QuestionTopic(body.question_topic)
     except ValueError:
@@ -217,7 +221,7 @@ async def api_record_response(body: ResponseCreateRequest, engine: KBPEngine = D
 @router.get("/daily/logs")
 def api_list_logs(
     date_str: str = Query(None, alias="date"), engine: KBPEngine = Depends(get_engine)
-):
+) -> list[DailyLogResponse]:
     if date_str:
         try:
             d = date.fromisoformat(date_str)
@@ -250,7 +254,7 @@ async def api_transcribe(
     file: UploadFile = File(...),
     language: str = "",
     engine: KBPEngine = Depends(get_engine),
-):
+) -> TranscriptionResponse:
     """Transcribe an uploaded audio file."""
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")

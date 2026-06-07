@@ -28,7 +28,7 @@ router = APIRouter()
 async def get_question(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Generate or retrieve today's question."""
     pending = engine.get_pending_question()
     if pending:
@@ -59,7 +59,7 @@ async def record_response(
     response: str = Form(...),
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Record a response to a daily question."""
     try:
         topic_enum = QuestionTopic(question_topic)
@@ -85,7 +85,7 @@ async def record_response(
 def profile_editor(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Return the inline profile editor partial."""
     raw_profile = engine.get_raw_profile()
     template = templates.get_template("partials/profile_editor.html")
@@ -97,7 +97,7 @@ def profile_editor(
 def profile_view(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Return the profile view partial (used by Cancel button in editor)."""
     profile = engine.get_profile()
     raw_profile = engine.get_raw_profile()
@@ -111,7 +111,7 @@ async def save_profile(
     raw_text: str = Form(...),
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Save profile text and return the profile view with success message."""
     try:
         profile = await engine.setup_profile_from_text(raw_text)
@@ -130,7 +130,7 @@ async def save_profile(
 async def refresh_profile(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Re-parse the profile via LLM."""
     try:
         profile = await engine.refresh_profile()
@@ -155,7 +155,7 @@ async def import_knowledge(
     topic: str = Form("general"),
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Import knowledge from text input."""
     try:
         topic_enum = QuestionTopic(topic)
@@ -180,7 +180,7 @@ async def import_knowledge(
 def knowledge_list_partial(
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Return knowledge list fragment."""
     entries = engine.get_knowledge_entries()
     template = templates.get_template("partials/knowledge_list.html")
@@ -193,7 +193,7 @@ def logs_by_date(
     date_str: str = "",
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Return daily logs for a date as a fragment."""
     if date_str:
         try:
@@ -214,7 +214,7 @@ async def transcribe_audio(
     language: str = Form(""),
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Transcribe an uploaded audio file and return the result as an HTMX partial."""
     if not file.filename:
         template = templates.get_template("partials/error_alert.html")
@@ -263,7 +263,7 @@ def save_settings(
     whisper_compute_type: str = Form("auto"),
     config: WebConfig = Depends(get_web_config),
     templates: Environment = Depends(get_templates),
-):
+) -> HTMLResponse:
     """Save settings to config file."""
     try:
         provider_enum = LLMProviderName(llm_provider)
