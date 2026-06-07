@@ -32,7 +32,10 @@ class LLMProvider(Protocol):
         self, prompt: str, *, system: str = "", json_schema: dict | None = None
     ) -> str: ...
 
-    def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]: ...
+    def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]:
+        """Stream text tokens. Does not accept json_schema — callers needing
+        structured output must use ``complete()`` instead."""
+        ...
 
 
 class LLMClient:
@@ -165,7 +168,11 @@ def create_provider(
     model: str,
     base_url: str = "",
 ) -> LLMProvider:
-    """Factory function to instantiate a provider by name."""
+    """Factory function to instantiate a provider by name.
+
+    Note: ``api_key`` is not forwarded to the Ollama provider, which
+    runs locally and does not require authentication.
+    """
     match provider_type:
         case "anthropic":
             from kbb.llm.anthropic_provider import AnthropicProvider
