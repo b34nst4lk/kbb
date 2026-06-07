@@ -270,7 +270,7 @@ async def api_transcribe(
 
     try:
         text = await engine.transcribe(tmp_path, language=language)
-        provider_name = engine._transcriber.provider_name if engine._transcriber else "unknown"
+        provider_name = engine.transcriber_provider_name
         return TranscriptionResponse(text=text, provider=provider_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Transcription failed: {e}") from e

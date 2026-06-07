@@ -351,10 +351,12 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
   - [x] `api.py` and `partials.py` now import from `kbb.transcribe` (canonical source)
   - [x] All 165 tests pass; existing tests cover the constant implicitly via transcribe/web routes
 
-- [ ] **Phase 6: Public accessors**
-  - [ ] `test_transcriber_provider_name_none`: Before init, returns `"unknown"`
-  - [ ] `test_transcriber_provider_name_initialized`: After init, returns provider name
-  - [ ] `test_engine_data_dir_property`: `engine.data_dir` returns configured path
+- [x] **Phase 6: Public accessors** ✅
+  - [x] Added `transcriber_provider_name` property to `KBPEngine` — returns provider name or "unknown"
+  - [x] Updated `api.py` to use `engine.transcriber_provider_name` instead of `engine._transcriber.provider_name`
+  - [x] `test_transcriber_provider_name_before_init`: Returns "unknown" before init
+  - [x] `test_transcriber_provider_name_after_init`: Returns provider name after `_get_transcriber()`
+  - [x] `data_dir` property not added — no external `engine._config.data_dir` access found
 
 - [ ] **Phase 7: CLI API key fallback**
   - [ ] `test_resolve_api_key_anthropic`: With ANTHROPIC_API_KEY set and provider=anthropic, returns that key

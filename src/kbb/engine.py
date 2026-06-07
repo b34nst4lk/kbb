@@ -190,6 +190,13 @@ class KBPEngine:
 
     # --- Workflow: Transcription ---
 
+    @property
+    def transcriber_provider_name(self) -> str:
+        """Return the name of the active transcription provider, or 'unknown' if not initialized."""
+        if self._transcriber is None:
+            return "unknown"
+        return self._transcriber.provider_name
+
     def _get_transcriber(self) -> TranscriptionClient:
         """Lazily initialize the transcription client."""
         if self._transcriber is None:

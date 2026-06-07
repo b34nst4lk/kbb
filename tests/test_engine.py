@@ -169,3 +169,18 @@ class TestEngineReadOperations:
         config = KBBConfig(data_dir=None, llm_api_key="test")
         with pytest.raises(ValueError, match="Data directory is required"):
             KBPEngine(config)
+
+
+class TestEngineTranscriberProperty:
+    def test_transcriber_provider_name_before_init(self, temp_data_dir: Path):
+        """Before any transcription, provider_name returns 'unknown'."""
+        config = KBBConfig(data_dir=temp_data_dir, llm_api_key="test")
+        engine = KBPEngine(config)
+        assert engine.transcriber_provider_name == "unknown"
+
+    def test_transcriber_provider_name_after_init(self, temp_data_dir: Path):
+        """After _get_transcriber(), provider_name returns the provider name."""
+        config = KBBConfig(data_dir=temp_data_dir, llm_api_key="test")
+        engine = KBPEngine(config)
+        engine._get_transcriber()  # noqa: SLF001
+        assert engine.transcriber_provider_name != "unknown"
