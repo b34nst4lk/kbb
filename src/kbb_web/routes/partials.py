@@ -11,7 +11,7 @@ import tempfile
 from datetime import date
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 
@@ -26,7 +26,6 @@ router = APIRouter()
 
 @router.get("/question")
 async def get_question(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -54,7 +53,6 @@ async def get_question(
 
 @router.post("/response")
 async def record_response(
-    request: Request,
     question_text: str = Form(...),
     question_topic: str = Form(...),
     question_rationale: str = Form(...),
@@ -85,7 +83,6 @@ async def record_response(
 
 @router.get("/profile-editor")
 def profile_editor(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -98,7 +95,6 @@ def profile_editor(
 
 @router.get("/profile-view")
 def profile_view(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -112,7 +108,6 @@ def profile_view(
 
 @router.post("/profile")
 async def save_profile(
-    request: Request,
     raw_text: str = Form(...),
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
@@ -133,7 +128,6 @@ async def save_profile(
 
 @router.post("/profile-refresh")
 async def refresh_profile(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -156,7 +150,6 @@ async def refresh_profile(
 
 @router.post("/knowledge/import")
 async def import_knowledge(
-    request: Request,
     title: str = Form(...),
     content: str = Form(...),
     topic: str = Form("general"),
@@ -185,7 +178,6 @@ async def import_knowledge(
 
 @router.get("/knowledge")
 def knowledge_list_partial(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -198,7 +190,6 @@ def knowledge_list_partial(
 
 @router.get("/logs")
 def logs_by_date(
-    request: Request,
     date_str: str = "",
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
@@ -219,7 +210,6 @@ def logs_by_date(
 
 @router.post("/transcribe")
 async def transcribe_audio(
-    request: Request,
     file: UploadFile = File(...),
     language: str = Form(""),
     engine: KBPEngine = Depends(get_engine),
@@ -261,7 +251,6 @@ async def transcribe_audio(
 
 @router.post("/settings")
 def save_settings(
-    request: Request,
     data_dir: str = Form(...),
     llm_provider: str = Form(...),
     llm_model: str = Form(...),
