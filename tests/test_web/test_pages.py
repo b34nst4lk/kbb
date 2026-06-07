@@ -68,6 +68,15 @@ class TestSettingsPage:
         assert "openai" in resp.text
         assert "ollama" in resp.text
 
+    def test_settings_has_transcription_fields(self, client):
+        """Settings page should include transcription configuration fields."""
+        resp = client.get("/settings")
+        assert resp.status_code == 200
+        assert "faster-whisper" in resp.text
+        assert "whisper_model" in resp.text
+        assert "whisper_device" in resp.text
+        assert "whisper_compute_type" in resp.text
+
 
 class TestDailyLogsPage:
     def test_daily_logs_empty(self, client):

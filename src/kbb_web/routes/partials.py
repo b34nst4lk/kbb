@@ -17,7 +17,7 @@ from jinja2 import Environment
 
 from kbb.engine import KBPEngine
 from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS
-from kbb.models import LLMProviderName, Question, QuestionTopic
+from kbb.models import LLMProviderName, Question, QuestionTopic, TranscriptionProviderName
 from kbb_web.config import WebConfig, save_config
 from kbb_web.dependencies import get_engine, get_templates, get_web_config
 
@@ -257,6 +257,10 @@ def save_settings(
     llm_base_url: str = Form(""),
     daily_log_time: str = Form("09:00"),
     port: str = Form("8199"),
+    transcription_provider: str = Form("faster-whisper"),
+    whisper_model: str = Form("base"),
+    whisper_device: str = Form("auto"),
+    whisper_compute_type: str = Form("auto"),
     config: WebConfig = Depends(get_web_config),
     templates: Environment = Depends(get_templates),
 ):
@@ -270,6 +274,15 @@ def save_settings(
             error=f"Invalid LLM provider: {llm_provider}. Valid options: {valid}"
         )
         return HTMLResponse(content=html)
+    try:
+        transcription_enum = TranscriptionProviderName(transcription_provider)
+    except ValueError:
+        valid = ", ".join(p.value for p in TranscriptionProviderName)
+        template = templates.get_template("partials/error_alert.html")
+        html = template.render(
+            error=f"Invalid transcription provider: {transcription_provider}. Valid options: {valid}"
+        )
+        return HTMLResponse(content=html)
     config.data_dir = Path(data_dir).expanduser()
     if not config.data_dir.is_absolute():
         config.data_dir = config.data_dir.resolve()
@@ -278,6 +291,10 @@ def save_settings(
     config.llm_base_url = llm_base_url
     config.daily_log_time = daily_log_time
     config.port = int(port)
+    config.transcription_provider = transcription_enum
+    config.whisper_model = whisper_model
+    config.whisper_device = whisper_device
+    config.whisper_compute_type = whisper_compute_type
 
     config_path = save_config(config)
     template = templates.get_template("partials/settings_saved.html")

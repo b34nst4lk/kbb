@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 
 from kbb.engine import KBPEngine
-from kbb.models import LLMProviderName
+from kbb.models import LLMProviderName, TranscriptionProviderName
 from kbb_web.config import WebConfig
 from kbb_web.dependencies import get_engine, get_templates, get_web_config
 
@@ -129,8 +129,12 @@ def settings_page(
     templates: Environment = Depends(get_templates),
 ):
     providers = [p.value for p in LLMProviderName]
+    transcription_providers = [p.value for p in TranscriptionProviderName]
     template = templates.get_template("pages/settings.html")
     html = template.render(
-        web_config=config, config_file_path=config.config_file_path, providers=providers
+        web_config=config,
+        config_file_path=config.config_file_path,
+        providers=providers,
+        transcription_providers=transcription_providers,
     )
     return HTMLResponse(content=html)
