@@ -9,17 +9,10 @@ wheels/
 # Virtual environments
 .venv
 
-# Data directory (user-specific)
-data/profile.md
-data/profile_structured.md
-data/pending_question.md
-data/knowledge/
-data/logs/
-
-# But keep the directory structure
-!data/.gitkeep
-!data/knowledge/**/.gitkeep
-!data/logs/.gitkeep
+# Data directories (user-specific)
+data/
+data2/
+vault/
 
 # IDE
 .idea/
@@ -33,3 +26,7 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# Test / coverage
+.coverage
+htmlcov/
