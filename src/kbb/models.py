@@ -6,6 +6,8 @@ from datetime import date, datetime
 from enum import Enum
 from pathlib import Path
 
+from kbb.obsidian import format_frontmatter
+
 
 def slugify(text: str, max_length: int = 80) -> str:
     """Convert text to a URL-safe slug. Truncates to max_length.
@@ -150,8 +152,6 @@ class DailyLog:
         YAML frontmatter (date, topic, slug), H1 heading, **Question** (topic),
         **Rationale**, ## Response, ## Recorded Knowledge.
         """
-        from kbb.obsidian import format_frontmatter
-
         frontmatter = format_frontmatter(
             {
                 "date": self.log_timestamp.strftime("%Y-%m-%d"),
