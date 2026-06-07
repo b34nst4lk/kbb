@@ -45,6 +45,26 @@
             <label for="port">Web Port</label>
             <input type="text" name="port" id="port" value="{{ web_config.port }}">
         </div>
+        <div class="form-group">
+            <label for="transcription_provider">Transcription Provider</label>
+            <select name="transcription_provider" id="transcription_provider">
+                {% for p in transcription_providers %}
+                <option value="{{ p }}" {% if p == web_config.transcription_provider.value %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="whisper_model">Whisper Model</label>
+            <input type="text" name="whisper_model" id="whisper_model" value="{{ web_config.whisper_model }}" placeholder="base">
+        </div>
+        <div class="form-group">
+            <label for="whisper_device">Whisper Device</label>
+            <input type="text" name="whisper_device" id="whisper_device" value="{{ web_config.whisper_device }}" placeholder="auto">
+        </div>
+        <div class="form-group">
+            <label for="whisper_compute_type">Whisper Compute Type</label>
+            <input type="text" name="whisper_compute_type" id="whisper_compute_type" value="{{ web_config.whisper_compute_type }}" placeholder="auto">
+        </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Save Settings</button>
         </div>

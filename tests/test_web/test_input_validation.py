@@ -203,6 +203,10 @@ class TestSettingsProviderValidation:
                 "llm_base_url": "",
                 "daily_log_time": "09:00",
                 "port": "8199",
+                "transcription_provider": "faster-whisper",
+                "whisper_model": "base",
+                "whisper_device": "auto",
+                "whisper_compute_type": "auto",
             },
         )
         assert resp.status_code == 200
@@ -220,6 +224,10 @@ class TestSettingsProviderValidation:
                 "llm_base_url": "",
                 "daily_log_time": "09:00",
                 "port": "8199",
+                "transcription_provider": "faster-whisper",
+                "whisper_model": "base",
+                "whisper_device": "auto",
+                "whisper_compute_type": "auto",
             },
         )
         assert resp.status_code == 200
@@ -227,6 +235,56 @@ class TestSettingsProviderValidation:
 
 
 # --- Profile name handling ---
+
+
+class TestTranscriptionSettingsValidation:
+    """Transcription settings fields should be validated and persisted."""
+
+    def test_save_settings_invalid_transcription_provider(self, client):
+        """POST /partials/settings with invalid transcription provider should show error."""
+        resp = client.post(
+            "/partials/settings",
+            data={
+                "data_dir": str(client.app.state.web_config.data_dir),
+                "llm_provider": "anthropic",
+                "llm_model": "claude-sonnet-4-20250514",
+                "llm_base_url": "",
+                "daily_log_time": "09:00",
+                "port": "8199",
+                "transcription_provider": "invalid",
+                "whisper_model": "base",
+                "whisper_device": "auto",
+                "whisper_compute_type": "auto",
+            },
+        )
+        assert resp.status_code == 200
+        assert "Invalid transcription provider" in resp.text
+        assert "faster-whisper" in resp.text  # Should list valid options
+
+    def test_save_settings_transcription_fields_persisted(self, client):
+        """POST /partials/settings with transcription fields should persist them."""
+        resp = client.post(
+            "/partials/settings",
+            data={
+                "data_dir": str(client.app.state.web_config.data_dir),
+                "llm_provider": "anthropic",
+                "llm_model": "claude-sonnet-4-20250514",
+                "llm_base_url": "",
+                "daily_log_time": "09:00",
+                "port": "8199",
+                "transcription_provider": "openai",
+                "whisper_model": "large",
+                "whisper_device": "cpu",
+                "whisper_compute_type": "float32",
+            },
+        )
+        assert resp.status_code == 200
+        assert "Settings saved" in resp.text or "settings" in resp.text.lower()
+        config = client.app.state.web_config
+        assert config.transcription_provider.value == "openai"
+        assert config.whisper_model == "large"
+        assert config.whisper_device == "cpu"
+        assert config.whisper_compute_type == "float32"
 
 
 class TestProfileNameHandling:
