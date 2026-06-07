@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 
@@ -21,7 +21,6 @@ router = APIRouter()
 
 @router.get("/")
 def dashboard(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -42,7 +41,6 @@ def dashboard(
 
 @router.get("/profile")
 def profile_page(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -55,7 +53,6 @@ def profile_page(
 
 @router.get("/daily")
 def daily_question_page(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -67,7 +64,6 @@ def daily_question_page(
 
 @router.get("/daily/logs")
 def daily_logs_list(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -79,7 +75,6 @@ def daily_logs_list(
 
 @router.get("/daily/logs/{date_str}")
 def daily_logs_by_date(
-    request: Request,
     date_str: str,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
@@ -98,7 +93,6 @@ def daily_logs_by_date(
 
 @router.get("/knowledge")
 def knowledge_list(
-    request: Request,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
 ):
@@ -109,7 +103,7 @@ def knowledge_list(
 
 
 @router.get("/knowledge/import")
-def knowledge_import_form(request: Request, templates: Environment = Depends(get_templates)):
+def knowledge_import_form(templates: Environment = Depends(get_templates)):
     template = templates.get_template("pages/knowledge/import_form.html")
     html = template.render()
     return HTMLResponse(content=html)
@@ -117,7 +111,6 @@ def knowledge_import_form(request: Request, templates: Environment = Depends(get
 
 @router.get("/knowledge/{slug}")
 def knowledge_detail(
-    request: Request,
     slug: str,
     engine: KBPEngine = Depends(get_engine),
     templates: Environment = Depends(get_templates),
@@ -132,7 +125,6 @@ def knowledge_detail(
 
 @router.get("/settings")
 def settings_page(
-    request: Request,
     config: WebConfig = Depends(get_web_config),
     templates: Environment = Depends(get_templates),
 ):
