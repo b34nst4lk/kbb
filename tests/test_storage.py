@@ -1,5 +1,6 @@
 """Tests for MarkdownStore."""
 
+import logging
 from datetime import date, datetime
 from pathlib import Path
 
@@ -328,3 +329,32 @@ class TestSlugify:
         from kbb.models import slugify
 
         assert MarkdownStore._slugify("Hello World") == slugify("Hello World")
+
+
+class TestMalformedFileLogging:
+    """Verify that malformed files are logged rather than silently skipped."""
+
+    def test_malformed_knowledge_entry_logged(self, mock_store: MarkdownStore, caplog):
+        """Malformed knowledge file triggers a warning log."""
+        # Write a file with no frontmatter into a knowledge directory
+        general_dir = mock_store._data_dir / "knowledge" / "general"
+        general_dir.mkdir(parents=True, exist_ok=True)
+        bad_file = general_dir / "broken.md"
+        bad_file.write_text("This has no frontmatter at all.")
+
+        with caplog.at_level(logging.WARNING, logger="kbb.storage.markdown_store"):
+            entries = mock_store.list_knowledge_entries()
+        assert len(entries) == 0
+        assert any("broken.md" in record.message for record in caplog.records)
+
+    def test_daily_log_missing_frontmatter_logged(self, mock_store: MarkdownStore, caplog):
+        """Daily log with no frontmatter triggers a warning log."""
+        logs_dir = mock_store._data_dir / "logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        bad_log = logs_dir / "2026-06-07T12-00-test.md"
+        bad_log.write_text("No frontmatter here.\n## Response\nSome text")
+
+        with caplog.at_level(logging.WARNING, logger="kbb.storage.markdown_store"):
+            log = mock_store._parse_daily_log(bad_log)
+        assert log is not None  # Still returns a DailyLog with defaults
+        assert any("missing frontmatter" in record.message for record in caplog.records)

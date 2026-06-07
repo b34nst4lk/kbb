@@ -5,12 +5,15 @@ All files use YAML frontmatter for Obsidian compatibility.
 
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date, datetime
 from pathlib import Path
 
 from kbb.models import DailyLog, KnowledgeEntry, Question, QuestionTopic, UserProfile, slugify
 from kbb.obsidian import format_frontmatter, generate_obsidian_config, parse_frontmatter
+
+logger = logging.getLogger(__name__)
 
 
 class MarkdownStore:
@@ -75,8 +78,9 @@ class MarkdownStore:
             for md_file in sorted(topic_dir.glob("*.md")):
                 try:
                     entries.append(self._parse_knowledge_entry(md_file))
-                except Exception:
-                    continue  # Skip malformed files
+                except Exception as e:
+                    logger.warning("Skipping malformed knowledge file %s: %s", md_file, e)
+                    continue
         return entries
 
     def find_knowledge_entry(self, slug: str) -> KnowledgeEntry | None:
@@ -458,6 +462,8 @@ class MarkdownStore:
 
         # Strip frontmatter if present
         metadata, body = parse_frontmatter(text)
+        if not metadata:
+            logger.warning("Daily log missing frontmatter: %s", path)
 
         # Parse timestamp from title: "# Daily Log — 2026-06-06 14:30"
         log_timestamp = datetime.now()
