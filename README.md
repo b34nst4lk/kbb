@@ -39,6 +39,81 @@ A personal knowledge base that grows through daily questions. It understands who
 
 ✅ = implemented · 🔜 = upcoming · — = not applicable
 
+## Architecture
+
+The core library (`src/kbb/`) is integration-agnostic — it never touches I/O directly. Adapters (CLI, web, desktop, upcoming Telegram/Discord) call engine methods and handle presentation.
+
+```python
+from kbb.engine import KBPEngine
+from kbb.models import KBBConfig
+
+engine = KBPEngine(KBBConfig(llm_api_key="..."))
+question = await engine.generate_daily_question()
+log = await engine.record_response(question, user_response)
+
+# Voice transcription
+text = await engine.transcribe(Path("recording.webm"))
+log = await engine.transcribe_and_record(question, Path("recording.webm"))
+```
+
+## Configuration
+
+| Environment Variable | Default | Description |
+|---|---|---|
+| `KBB_API_KEY` | — | API key for the LLM provider |
+| `KBB_LLM_PROVIDER` | `anthropic` | LLM provider (`anthropic`, `openai`, or `ollama`) |
+| `KBB_LLM_MODEL` | Provider-specific | Model to use |
+| `KBB_LLM_BASE_URL` | — | Custom endpoint URL (for OpenAI-compatible APIs) |
+| `KBB_DATA_DIR` | `data` | Path to data directory |
+| `KBB_TRANSCRIPTION_PROVIDER` | `faster-whisper` | Transcription provider (`faster-whisper`, `whisper`, or `openai`) |
+| `KBB_WHISPER_MODEL` | `base` | Whisper model size (`tiny`, `base`, `small`, `medium`, `large-v3`) |
+| `KBB_WHISPER_DEVICE` | `auto` | Device for local models (`auto`, `cpu`, `cuda`, `mps`) |
+| `KBB_WHISPER_COMPUTE_TYPE` | `auto` | Compute type for faster-whisper (`auto`, `int8`, `float16`, `float32`) |
+
+Config file search order: `KBB_CONFIG_FILE` env → `./kbb.yaml` → `~/.config/kbb/kbb.yaml` → `~/.kbb.yaml`
+
+### YAML Configuration
+
+```yaml
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  api_key: ""           # or set ANTHROPIC_API_KEY / KBB_API_KEY
+  base_url: ""
+
+transcription:
+  provider: faster-whisper   # faster-whisper | whisper | openai
+  fallback: openai            # optional: fall back if primary fails
+  whisper_model: base         # tiny/base/small/medium/large-v3
+  whisper_device: auto        # auto/cpu/cuda/mps
+  whisper_compute_type: auto  # auto/int8/float16/float32 (faster-whisper only)
+```
+
+## Data Storage
+
+All data is stored as markdown files in the `data/` directory:
+
+```
+data/
+├── .obsidian/               # Obsidian vault config
+│   ├── app.json
+│   └── daily-notes.json
+├── profile.md              # Your profile (edit this directly)
+├── profile_structured.md   # Auto-generated structured view
+├── knowledge/
+│   ├── education/
+│   ├── work/
+│   ├── life/
+│   ├── skill/
+│   ├── opinion/
+│   ├── decision/
+│   ├── process/
+│   └── general/
+└── logs/
+    ├── 2026-06-06.md                            # Aggregate daily note (Obsidian)
+    └── 2026-06-06T21-53-project-stakeholder-management.md
+```
+
 ## Setup
 
 ```bash
@@ -102,39 +177,6 @@ pip install -e ".[transcription-whisper]"
 | `kbb status` | Show knowledge base status |
 | `kbb sync-vault` | Regenerate Obsidian vault config and daily notes |
 
-## Configuration
-
-| Environment Variable | Default | Description |
-|---|---|---|
-| `KBB_API_KEY` | — | API key for the LLM provider |
-| `KBB_LLM_PROVIDER` | `anthropic` | LLM provider (`anthropic`, `openai`, or `ollama`) |
-| `KBB_LLM_MODEL` | Provider-specific | Model to use |
-| `KBB_LLM_BASE_URL` | — | Custom endpoint URL (for OpenAI-compatible APIs) |
-| `KBB_DATA_DIR` | `data` | Path to data directory |
-| `KBB_TRANSCRIPTION_PROVIDER` | `faster-whisper` | Transcription provider (`faster-whisper`, `whisper`, or `openai`) |
-| `KBB_WHISPER_MODEL` | `base` | Whisper model size (`tiny`, `base`, `small`, `medium`, `large-v3`) |
-| `KBB_WHISPER_DEVICE` | `auto` | Device for local models (`auto`, `cpu`, `cuda`, `mps`) |
-| `KBB_WHISPER_COMPUTE_TYPE` | `auto` | Compute type for faster-whisper (`auto`, `int8`, `float16`, `float32`) |
-
-Config file search order: `KBB_CONFIG_FILE` env → `./kbb.yaml` → `~/.config/kbb/kbb.yaml` → `~/.kbb.yaml`
-
-### YAML Configuration
-
-```yaml
-llm:
-  provider: anthropic
-  model: claude-sonnet-4-20250514
-  api_key: ""           # or set ANTHROPIC_API_KEY / KBB_API_KEY
-  base_url: ""
-
-transcription:
-  provider: faster-whisper   # faster-whisper | whisper | openai
-  fallback: openai            # optional: fall back if primary fails
-  whisper_model: base         # tiny/base/small/medium/large-v3
-  whisper_device: auto        # auto/cpu/cuda/mps
-  whisper_compute_type: auto  # auto/int8/float16/float32 (faster-whisper only)
-```
-
 ### Using with Ollama
 
 ```bash
@@ -163,23 +205,6 @@ Add to your crontab for daily question prompts:
 ```bash
 # Generate a question every morning at 9am
 0 9 * * * cd /path/to/project && kbb daily-question >> /tmp/kbb-question.log 2>&1
-```
-
-## Architecture
-
-The core library (`src/kbb/`) is integration-agnostic — it never touches I/O directly. Adapters (CLI, web, desktop, upcoming Telegram/Discord) call engine methods and handle presentation.
-
-```python
-from kbb.engine import KBPEngine
-from kbb.models import KBBConfig
-
-engine = KBPEngine(KBBConfig(llm_api_key="..."))
-question = await engine.generate_daily_question()
-log = await engine.record_response(question, user_response)
-
-# Voice transcription
-text = await engine.transcribe(Path("recording.webm"))
-log = await engine.transcribe_and_record(question, Path("recording.webm"))
 ```
 
 ## Obsidian Integration
@@ -224,29 +249,4 @@ To regenerate all daily notes and Obsidian config (e.g., after upgrading from a 
 
 ```bash
 kbb sync-vault
-```
-
-## Data Storage
-
-All data is stored as markdown files in the `data/` directory:
-
-```
-data/
-├── .obsidian/               # Obsidian vault config
-│   ├── app.json
-│   └── daily-notes.json
-├── profile.md              # Your profile (edit this directly)
-├── profile_structured.md   # Auto-generated structured view
-├── knowledge/
-│   ├── education/
-│   ├── work/
-│   ├── life/
-│   ├── skill/
-│   ├── opinion/
-│   ├── decision/
-│   ├── process/
-│   └── general/
-└── logs/
-    ├── 2026-06-06.md                            # Aggregate daily note (Obsidian)
-    └── 2026-06-06T21-53-project-stakeholder-management.md
 ```
