@@ -13,6 +13,7 @@ wheels/
 data/
 data2/
 vault/
+src/data/
 
 # IDE
 .idea/
