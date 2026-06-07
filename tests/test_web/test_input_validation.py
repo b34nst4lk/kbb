@@ -13,7 +13,6 @@ from starlette.testclient import TestClient
 
 from kbb.engine import KBPEngine
 from kbb.llm.base import LLMClient
-from kbb.models import LLMProviderName
 from kbb_web.app import create_app
 from kbb_web.config import WebConfig
 from tests.helpers import MockProvider
