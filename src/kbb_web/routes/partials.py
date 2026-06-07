@@ -15,7 +15,8 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 
-from kbb.engine import KBPEngine, SUPPORTED_AUDIO_EXTENSIONS
+from kbb.engine import KBPEngine
+from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS
 from kbb.models import LLMProviderName, Question, QuestionTopic
 from kbb_web.config import WebConfig, save_config
 from kbb_web.dependencies import get_engine, get_templates, get_web_config

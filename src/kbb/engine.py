@@ -21,9 +21,7 @@ from kbb.models import (
 )
 from kbb.llm.base import LLMClient, create_provider
 from kbb.storage.markdown_store import MarkdownStore
-from kbb.transcribe import TranscriptionClient, create_transcriber
-
-SUPPORTED_AUDIO_EXTENSIONS = frozenset({".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"})
+from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS, TranscriptionClient, create_transcriber
 
 
 class KBPEngine:

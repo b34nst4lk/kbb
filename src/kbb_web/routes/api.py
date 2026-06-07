@@ -13,7 +13,8 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
-from kbb.engine import KBPEngine, SUPPORTED_AUDIO_EXTENSIONS
+from kbb.engine import KBPEngine
+from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS
 from kbb.models import Question, QuestionTopic
 from kbb_web.dependencies import get_engine
 

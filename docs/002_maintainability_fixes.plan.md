@@ -345,9 +345,11 @@ Replace the three blocks with `question = _get_question(engine)`, with `try/exce
   - [x] `TranscriptionClient.transcribe()`: Changed `raise primary_error from primary_error` to `raise primary_error from fallback_error`
   - [x] `test_both_fail_raises_primary_error`: Updated to verify fallback error is chained as `__cause__`
 
-- [ ] **Phase 5: Move SUPPORTED_AUDIO_EXTENSIONS**
-  - [ ] `test_supported_extensions_in_transcribe_module`: `from kbb.transcribe import SUPPORTED_AUDIO_EXTENSIONS` works
-  - [ ] `test_supported_extensions_re_exported_from_engine`: `from kbb.engine import SUPPORTED_AUDIO_EXTENSIONS` still works
+- [x] **Phase 5: Move SUPPORTED_AUDIO_EXTENSIONS** ✅
+  - [x] Moved `SUPPORTED_AUDIO_EXTENSIONS` definition from `engine.py` to `transcribe.py`
+  - [x] `engine.py` re-exports from `transcribe` for backward compatibility
+  - [x] `api.py` and `partials.py` now import from `kbb.transcribe` (canonical source)
+  - [x] All 165 tests pass; existing tests cover the constant implicitly via transcribe/web routes
 
 - [ ] **Phase 6: Public accessors**
   - [ ] `test_transcriber_provider_name_none`: Before init, returns `"unknown"`

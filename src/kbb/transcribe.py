@@ -12,6 +12,8 @@ import asyncio
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
+SUPPORTED_AUDIO_EXTENSIONS = frozenset({".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"})
+
 
 @runtime_checkable
 class TranscriptionProvider(Protocol):
