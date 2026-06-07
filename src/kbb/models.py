@@ -30,6 +30,14 @@ class LLMProviderName(str, Enum):
     OLLAMA = "ollama"
 
 
+class TranscriptionProviderName(str, Enum):
+    """Supported transcription providers."""
+
+    FASTER_WHISPER = "faster-whisper"
+    WHISPER = "whisper"
+    OPENAI = "openai"
+
+
 @dataclass
 class UserProfile:
     """Structured representation of who the user is."""
@@ -130,3 +138,10 @@ class KBBConfig:
     llm_api_key: str = ""
     llm_base_url: str = ""  # Custom endpoint (e.g. Ollama, Azure OpenAI)
     daily_log_time: str = "09:00"
+
+    # Transcription settings
+    transcription_provider: TranscriptionProviderName = TranscriptionProviderName.FASTER_WHISPER
+    transcription_fallback: TranscriptionProviderName | None = None
+    whisper_model: str = "base"
+    whisper_device: str = "auto"
+    whisper_compute_type: str = "auto"

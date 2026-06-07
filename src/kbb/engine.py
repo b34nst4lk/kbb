@@ -21,6 +21,9 @@ from kbb.models import (
 )
 from kbb.llm.base import LLMClient, create_provider
 from kbb.storage.markdown_store import MarkdownStore
+from kbb.transcribe import TranscriptionClient, create_transcriber
+
+SUPPORTED_AUDIO_EXTENSIONS = frozenset({".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"})
 
 
 class KBPEngine:
@@ -41,6 +44,7 @@ class KBPEngine:
             base_url=config.llm_base_url,
         )
         self._llm = LLMClient(provider)
+        self._transcriber: TranscriptionClient | None = None
 
     # --- Workflow: Profile Setup ---
 
@@ -183,6 +187,65 @@ class KBPEngine:
         question = await self.generate_daily_question()
         response = get_response(question)
         return await self.record_response(question, response)
+
+    # --- Workflow: Transcription ---
+
+    def _get_transcriber(self) -> TranscriptionClient:
+        """Lazily initialize the transcription client."""
+        if self._transcriber is None:
+            config = self._config
+            fallback_type = (
+                config.transcription_fallback.value if config.transcription_fallback else ""
+            )
+            self._transcriber = create_transcriber(
+                config.transcription_provider.value,
+                api_key=config.llm_api_key,
+                model=config.whisper_model,
+                device=config.whisper_device,
+                compute_type=config.whisper_compute_type,
+                fallback_type=fallback_type,
+            )
+        return self._transcriber
+
+    async def transcribe(self, audio_path: Path, *, language: str = "") -> str:
+        """Transcribe an audio file to text.
+
+        Uses the configured transcription provider with optional fallback.
+        Raises ValueError if the file doesn't exist or isn't a supported format.
+        """
+        audio_path = Path(audio_path)
+        if not audio_path.exists():
+            raise ValueError(f"Audio file not found: {audio_path}")
+        if not self._is_supported_audio_format(audio_path):
+            raise ValueError(
+                f"Unsupported audio format: {audio_path.suffix}. "
+                f"Supported formats: {', '.join(sorted(SUPPORTED_AUDIO_EXTENSIONS))}"
+            )
+        transcriber = self._get_transcriber()
+        return await transcriber.transcribe(audio_path, language=language)
+
+    async def transcribe_and_record(
+        self,
+        question: Question,
+        audio_path: Path,
+        *,
+        language: str = "",
+    ) -> DailyLog:
+        """Transcribe an audio response and record it as a daily log.
+
+        Convenience method combining transcribe() + record_response().
+        """
+        text = await self.transcribe(audio_path, language=language)
+        if not text.strip():
+            raise ValueError(
+                "Transcription produced empty text. The audio may be silent or corrupted."
+            )
+        return await self.record_response(question, text)
+
+    @staticmethod
+    def _is_supported_audio_format(path: Path) -> bool:
+        """Check if the file extension is a supported audio format."""
+        return path.suffix.lower() in SUPPORTED_AUDIO_EXTENSIONS
 
     # --- Read operations ---
 

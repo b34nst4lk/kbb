@@ -1,7 +1,5 @@
 """Tests for CLI commands."""
 
-from unittest.mock import AsyncMock, patch
-
 from typer.testing import CliRunner
 
 from kbb_cli.app import app

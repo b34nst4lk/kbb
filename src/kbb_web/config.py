@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-from kbb.models import KBBConfig, LLMProviderName
+from kbb.models import KBBConfig, LLMProviderName, TranscriptionProviderName
 
 
 @dataclass
@@ -34,6 +34,13 @@ class WebConfig:
     debug: bool = False
     config_file_path: Path | None = None
 
+    # Transcription settings
+    transcription_provider: TranscriptionProviderName = TranscriptionProviderName.FASTER_WHISPER
+    transcription_fallback: TranscriptionProviderName | None = None
+    whisper_model: str = "base"
+    whisper_device: str = "auto"
+    whisper_compute_type: str = "auto"
+
     def to_kbb_config(self) -> KBBConfig:
         """Convert to core engine config."""
         return KBBConfig(
@@ -43,6 +50,11 @@ class WebConfig:
             llm_api_key=self._resolve_api_key(),
             llm_base_url=self.llm_base_url,
             daily_log_time=self.daily_log_time,
+            transcription_provider=self.transcription_provider,
+            transcription_fallback=self.transcription_fallback,
+            whisper_model=self.whisper_model,
+            whisper_device=self.whisper_device,
+            whisper_compute_type=self.whisper_compute_type,
         )
 
     def _resolve_api_key(self) -> str:
@@ -65,7 +77,14 @@ class WebConfig:
         """Parse from YAML dict with env var overrides."""
         llm = d.get("llm", {})
         web = d.get("web", {})
+        transcription = d.get("transcription", {})
         provider_str = os.getenv("KBB_LLM_PROVIDER", llm.get("provider", "anthropic"))
+        trans_provider_str = os.getenv(
+            "KBB_TRANSCRIPTION_PROVIDER", transcription.get("provider", "faster-whisper")
+        )
+        trans_fallback_str = os.getenv(
+            "KBB_TRANSCRIPTION_FALLBACK", transcription.get("fallback", "")
+        )
         return cls(
             data_dir=Path(os.getenv("KBB_DATA_DIR", d.get("data_dir", "data"))).expanduser(),
             llm_provider=LLMProviderName(provider_str),
@@ -76,6 +95,19 @@ class WebConfig:
             host=web.get("host", "127.0.0.1"),
             port=int(web.get("port", 8199)),
             debug=web.get("debug", False),
+            transcription_provider=TranscriptionProviderName(trans_provider_str),
+            transcription_fallback=TranscriptionProviderName(trans_fallback_str)
+            if trans_fallback_str
+            else None,
+            whisper_model=os.getenv(
+                "KBB_WHISPER_MODEL", transcription.get("whisper_model", "base")
+            ),
+            whisper_device=os.getenv(
+                "KBB_WHISPER_DEVICE", transcription.get("whisper_device", "auto")
+            ),
+            whisper_compute_type=os.getenv(
+                "KBB_WHISPER_COMPUTE_TYPE", transcription.get("whisper_compute_type", "auto")
+            ),
         )
 
     def to_dict(self) -> dict:
@@ -89,6 +121,15 @@ class WebConfig:
                 "base_url": self.llm_base_url,
             },
             "daily_log_time": self.daily_log_time,
+            "transcription": {
+                "provider": self.transcription_provider.value,
+                "fallback": self.transcription_fallback.value
+                if self.transcription_fallback
+                else "",
+                "whisper_model": self.whisper_model,
+                "whisper_device": self.whisper_device,
+                "whisper_compute_type": self.whisper_compute_type,
+            },
             "web": {
                 "host": self.host,
                 "port": self.port,

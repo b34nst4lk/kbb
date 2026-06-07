@@ -29,6 +29,12 @@ web = [
 desktop = [
     "pywebview>=5.0,<6.0",
 ]
+transcription = [
+    "faster-whisper>=1.0,<2.0",
+]
+transcription-whisper = [
+    "openai-whisper>=20231117",
+]
 dev = [
     "pytest>=8.0,<9.0",
     "pytest-asyncio>=0.24,<1.0",
@@ -39,7 +45,7 @@ dev = [
     "knowledge-base-builder[web]",
 ]
 all = [
-    "knowledge-base-builder[cli,web,desktop]",
+    "knowledge-base-builder[cli,web,desktop,transcription]",
 ]
 
 [project.scripts]

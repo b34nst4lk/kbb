@@ -128,6 +128,3 @@ class TestKBBConfig:
         assert config.llm_model == "claude-sonnet-4-20250514"
         assert config.llm_api_key == ""
         assert config.daily_log_time == "09:00"
-
-
-from pathlib import Path  # noqa: E402

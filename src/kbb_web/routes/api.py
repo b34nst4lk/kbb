@@ -6,12 +6,14 @@ Useful for scripting, integrations, and future SPA migration.
 
 from __future__ import annotations
 
+import tempfile
 from datetime import date
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
-from kbb.engine import KBPEngine
+from kbb.engine import KBPEngine, SUPPORTED_AUDIO_EXTENSIONS
 from kbb.models import QuestionTopic
 from kbb_web.dependencies import get_engine
 
@@ -226,3 +228,41 @@ def api_list_logs(
         )
         for log in logs
     ]
+
+
+class TranscriptionResponse(BaseModel):
+    text: str
+    provider: str
+
+
+@router.post("/transcribe")
+async def api_transcribe(
+    file: UploadFile = File(...),
+    language: str = "",
+    engine: KBPEngine = Depends(get_engine),
+):
+    """Transcribe an uploaded audio file."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in SUPPORTED_AUDIO_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported audio format: {suffix}. "
+            f"Supported: {', '.join(sorted(SUPPORTED_AUDIO_EXTENSIONS))}",
+        )
+
+    # Save to temp file — both local Whisper and OpenAI API need a file path
+    content = await file.read()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        text = await engine.transcribe(tmp_path, language=language)
+        provider_name = engine._transcriber.provider_name if engine._transcriber else "unknown"
+        return TranscriptionResponse(text=text, provider=provider_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}") from e
+    finally:
+        tmp_path.unlink(missing_ok=True)

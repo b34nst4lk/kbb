@@ -6,12 +6,52 @@
     <input type="hidden" name="question_topic" value="{{ question.topic.value }}">
     <input type="hidden" name="question_rationale" value="{{ question.rationale }}">
     <div class="form-group">
-        <label for="response">Your Response</label>
-        <textarea name="response" id="response" rows="10"
-                  placeholder="Write your response here. Ctrl+Enter to submit."></textarea>
+        <label for="response-textarea">Your Response</label>
+        <div class="voice-recorder">
+            <button type="button" class="btn-record" data-voice-recorder title="Record audio from microphone">🎤 Record</button>
+            <label class="btn btn-sm" title="Upload an audio file" style="cursor: pointer;">
+                📁 Upload
+                <input type="file" id="audio-upload" accept=".wav,.mp3,.m4a,.ogg,.flac,.webm" style="display: none;">
+            </label>
+        </div>
+        <textarea name="response" id="response-textarea" rows="10"
+                  placeholder="Write your response here. Ctrl+Enter to submit. Or use Record/Upload above."></textarea>
     </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Record Response</button>
         <span id="response-spinner" class="htmx-indicator">Recording your knowledge...</span>
     </div>
 </form>
+
+<script>
+// Handle audio file upload
+document.getElementById('audio-upload')?.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const textarea = document.getElementById('response-textarea');
+    if (textarea) {
+        textarea.placeholder = '⏳ Transcribing...';
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const text = await transcribeAudio(formData);
+        if (textarea) {
+            textarea.value = text;
+            textarea.placeholder = 'Write your response here. Ctrl+Enter to submit. Or use Record/Upload above.';
+            textarea.focus();
+        }
+    } catch (err) {
+        if (textarea) {
+            textarea.placeholder = 'Write your response here. Ctrl+Enter to submit. Or use Record/Upload above.';
+        }
+        alert('Transcription failed: ' + err.message);
+    }
+
+    // Reset the file input so the same file can be re-uploaded
+    e.target.value = '';
+});
+</script>

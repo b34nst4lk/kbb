@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestDashboard:
     def test_dashboard_returns_html(self, client):

@@ -232,3 +232,31 @@ label {
     color: var(--color-text-muted);
 }
 .empty-state p { margin-bottom: 1rem; }
+
+/* Voice recording */
+.voice-recorder {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.btn-record {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-record:hover { border-color: var(--color-text-muted); }
+.btn-record.recording {
+    background: #fef2f2;
+    border-color: var(--color-error);
+    color: var(--color-error);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}

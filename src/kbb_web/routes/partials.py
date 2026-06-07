@@ -7,14 +7,15 @@ All LLM calls are wrapped in try/except so errors are shown inline.
 
 from __future__ import annotations
 
+import tempfile
 from datetime import date
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from jinja2 import Environment
 
-from kbb.engine import KBPEngine
+from kbb.engine import KBPEngine, SUPPORTED_AUDIO_EXTENSIONS
 from kbb.models import LLMProviderName, Question, QuestionTopic
 from kbb_web.config import WebConfig, save_config
 from kbb_web.dependencies import get_engine, get_templates, get_web_config
@@ -204,6 +205,48 @@ def logs_by_date(
     template = templates.get_template("partials/log_list.html")
     html = template.render(logs=logs)
     return HTMLResponse(content=html)
+
+
+@router.post("/transcribe")
+async def transcribe_audio(
+    request: Request,
+    file: UploadFile = File(...),
+    language: str = Form(""),
+    engine: KBPEngine = Depends(get_engine),
+    templates: Environment = Depends(get_templates),
+):
+    """Transcribe an uploaded audio file and return the result as an HTMX partial."""
+    if not file.filename:
+        template = templates.get_template("partials/error_alert.html")
+        html = template.render(error="No file selected.")
+        return HTMLResponse(content=html)
+
+    suffix = Path(file.filename).suffix.lower()
+    if suffix not in SUPPORTED_AUDIO_EXTENSIONS:
+        template = templates.get_template("partials/error_alert.html")
+        html = template.render(
+            error=f"Unsupported audio format: {suffix}. "
+            f"Supported: {', '.join(sorted(SUPPORTED_AUDIO_EXTENSIONS))}"
+        )
+        return HTMLResponse(content=html)
+
+    # Save to temp file — both local Whisper and OpenAI API need a file path
+    content = await file.read()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        text = await engine.transcribe(tmp_path, language=language)
+        template = templates.get_template("partials/transcription_result.html")
+        html = template.render(transcription=text)
+        return HTMLResponse(content=html)
+    except Exception as e:
+        template = templates.get_template("partials/error_alert.html")
+        html = template.render(error=f"Transcription failed: {e}")
+        return HTMLResponse(content=html)
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 @router.post("/settings")

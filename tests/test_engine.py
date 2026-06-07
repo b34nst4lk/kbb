@@ -1,13 +1,13 @@
 """Tests for KBPEngine."""
 
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 from kbb.engine import KBPEngine
 from kbb.llm.base import LLMClient
-from kbb.models import KBBConfig, KnowledgeEntry, LLMProviderName, Question, QuestionTopic
+from kbb.models import KBBConfig, Question, QuestionTopic
 from tests.helpers import MockProvider
 
 

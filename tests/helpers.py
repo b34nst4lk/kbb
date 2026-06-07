@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 
 class MockProvider:
@@ -58,3 +59,22 @@ class MockProvider:
     async def stream(self, prompt: str, *, system: str = "") -> AsyncGenerator[str, None]:
         response = await self.complete(prompt, system=system)
         yield response
+
+
+class MockTranscriptionProvider:
+    """In-memory transcription provider that returns canned text for testing.
+
+    Records all calls for assertion purposes.
+    """
+
+    def __init__(self, text: str = "Mock transcription result") -> None:
+        self._text = text
+        self._calls: list[tuple[Path, str]] = []  # (audio_path, language)
+
+    @property
+    def name(self) -> str:
+        return "mock-transcription"
+
+    async def transcribe(self, audio_path: Path, *, language: str = "") -> str:
+        self._calls.append((audio_path, language))
+        return self._text

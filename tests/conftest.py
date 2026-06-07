@@ -10,9 +10,7 @@ import pytest
 from kbb.llm.base import LLMClient
 from kbb.models import (
     DailyLog,
-    KBBConfig,
     KnowledgeEntry,
-    LLMProviderName,
     Question,
     QuestionTopic,
     UserProfile,

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestProfileEditorPartial:
     def test_profile_editor_returns_fragment(self, client):

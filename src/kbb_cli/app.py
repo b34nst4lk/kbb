@@ -18,7 +18,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from kbb.engine import KBPEngine
-from kbb.models import KBBConfig, LLMProviderName, QuestionTopic
+from kbb.models import KBBConfig, LLMProviderName, QuestionTopic, TranscriptionProviderName
 
 app = typer.Typer(
     name="kbb",
@@ -80,6 +80,12 @@ def _get_engine() -> KBPEngine:
             "KBB_API_KEY", os.getenv("ANTHROPIC_API_KEY", os.getenv("OPENAI_API_KEY", ""))
         ),
         llm_base_url=os.getenv("KBB_LLM_BASE_URL", ""),
+        transcription_provider=TranscriptionProviderName(
+            os.getenv("KBB_TRANSCRIPTION_PROVIDER", "faster-whisper")
+        ),
+        whisper_model=os.getenv("KBB_WHISPER_MODEL", "base"),
+        whisper_device=os.getenv("KBB_WHISPER_DEVICE", "auto"),
+        whisper_compute_type=os.getenv("KBB_WHISPER_COMPUTE_TYPE", "auto"),
     )
     return KBPEngine(config)
 
@@ -364,6 +370,85 @@ def daily_log(
     for log in logs:
         console.print(log.to_markdown())
         console.print()
+
+
+# --- Transcription commands ---
+
+
+@app.command()
+def transcribe(
+    audio_file: Path = typer.Argument(..., help="Path to audio file", exists=True),
+    language: str = typer.Option("", help="Language hint (e.g. 'en', 'es')"),
+) -> None:
+    """Transcribe an audio file to text."""
+    engine = _get_engine()
+    try:
+        with console.status("[bold green]Transcribing...[/bold green]"):
+            text = asyncio.run(engine.transcribe(audio_file, language=language))
+        console.print(Panel(text, title="Transcription"))
+    except Exception as e:
+        console.print(f"[red]Transcription failed: {e}[/red]")
+        raise typer.Exit(1)
+
+
+@app.command(name="daily-respond-voice")
+def daily_respond_voice(
+    audio_file: Path = typer.Argument(..., help="Path to audio file", exists=True),
+    language: str = typer.Option("", help="Language hint (e.g. 'en', 'es')"),
+) -> None:
+    """Transcribe an audio file and record the response to today's question."""
+    engine = _get_engine()
+
+    # Check for pending question or generate one
+    pending = engine.get_pending_question()
+    if pending:
+        console.print("[dim]Using previously generated question.[/dim]")
+        question = pending
+    else:
+        try:
+            with console.status("[bold green]Generating today's question...[/bold green]"):
+                question = asyncio.run(engine.generate_daily_question())
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
+
+    console.print(
+        Panel(
+            f"[bold]{question.text}[/bold]\n\n"
+            f"[dim]Topic: {question.topic.value} | {question.rationale}[/dim]",
+            title="Today's Question",
+        )
+    )
+
+    # Transcribe audio
+    try:
+        with console.status("[bold green]Transcribing audio...[/bold green]"):
+            text = asyncio.run(engine.transcribe(audio_file, language=language))
+    except Exception as e:
+        console.print(f"[red]Transcription failed: {e}[/red]")
+        raise typer.Exit(1)
+
+    if not text.strip():
+        console.print("[red]Transcription produced empty text. The audio may be silent.[/red]")
+        raise typer.Exit(1)
+
+    console.print(Panel(text, title="Transcription"))
+
+    # Confirm before recording
+    proceed = typer.confirm("Record this response?", default=True)
+    if not proceed:
+        console.print("[yellow]Cancelled — no changes saved.[/yellow]")
+        raise typer.Exit()
+
+    # Record the response
+    try:
+        with console.status("[bold green]Recording your response...[/bold green]"):
+            asyncio.run(engine.record_response(question, text))
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Cancelled.[/yellow]")
+        raise typer.Exit(1)
+
+    console.print("\n[green]Recorded! Log saved.[/green]")
 
 
 # --- Status command ---
