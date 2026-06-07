@@ -5,7 +5,8 @@ import json
 import pytest
 
 from kbb.llm.base import LLMClient, create_provider
-from kbb.models import KnowledgeEntry, Question, QuestionTopic, UserProfile
+from kbb.llm.schemas import ProfileSchema, QuestionSchema, PROFILE_JSON_SCHEMA, QUESTION_JSON_SCHEMA
+from kbb.models import Question, QuestionTopic, UserProfile
 
 
 class TestLLMClient:
@@ -75,65 +76,14 @@ class TestParseJsonResponse:
         result = LLMClient._parse_json_response(text)
         assert result["name"] == "Test"
 
-    def test_json_with_code_fence(self):
-        text = '```json\n{"name": "Test", "education": ["BS"]}\n```'
-        result = LLMClient._parse_json_response(text)
-        assert result["name"] == "Test"
-
-    def test_json_embedded_in_text(self):
-        text = 'Here is the result:\n{"name": "Test", "education": ["BS"]}\nThat is all.'
-        result = LLMClient._parse_json_response(text)
-        assert result["name"] == "Test"
-
     def test_invalid_json_raises(self):
-        with pytest.raises(ValueError, match="Failed to parse"):
+        with pytest.raises(ValueError, match="provider should guarantee valid JSON"):
             LLMClient._parse_json_response("not json at all")
 
-    def test_truncated_json_auto_closed(self):
-        """Truncated JSON with missing closing braces should be auto-closed."""
-        truncated = '{"name": "Test", "education": ["BS"'
-        result = LLMClient._parse_json_response(truncated)
+    def test_whitespace_stripped(self):
+        text = '  \n  {"name": "Test", "education": ["BS"]}  \n  '
+        result = LLMClient._parse_json_response(text)
         assert result["name"] == "Test"
-        assert result["education"] == ["BS"]
-
-    def test_truncated_json_missing_brace_and_bracket(self):
-        """Truncated JSON missing both } and ] should be auto-closed."""
-        truncated = '{"name": "Test", "items": ["a", "b"'
-        result = LLMClient._parse_json_response(truncated)
-        assert result["name"] == "Test"
-        assert result["items"] == ["a", "b"]
-
-    def test_nested_truncated_json(self):
-        """Nested truncated JSON should be auto-closed."""
-        truncated = '{"name": "Test", "data": {"key": "value"'
-        result = LLMClient._parse_json_response(truncated)
-        assert result["name"] == "Test"
-        assert result["data"]["key"] == "value"
-
-
-class TestTryCloseJson:
-    def test_balanced_json_returns_none(self):
-        assert LLMClient._try_close_json('{"name": "Test"}') is None
-
-    def test_missing_closing_brace(self):
-        result = LLMClient._try_close_json('{"name": "Test"')
-        assert result == '{"name": "Test"}'
-
-    def test_missing_closing_bracket_and_brace(self):
-        result = LLMClient._try_close_json('{"items": ["a"')
-        assert result == '{"items": ["a"]}'
-
-    def test_nested_missing_both(self):
-        result = LLMClient._try_close_json('{"data": {"key": "val"')
-        assert result == '{"data": {"key": "val"}}'
-
-    def test_string_with_braces_ignored(self):
-        result = LLMClient._try_close_json('{"text": "hello {world}"')
-        assert result == '{"text": "hello {world}"}'
-
-    def test_escaped_quotes_in_string(self):
-        result = LLMClient._try_close_json('{"text": "he said \\"hi\\""')
-        assert result == '{"text": "he said \\"hi\\""}'
 
 
 class TestCreateProvider:
@@ -200,3 +150,64 @@ class TestCreateProvider:
             assert "my-proxy" in provider.name
         except ImportError:
             pytest.skip("openai package not installed")
+
+
+class TestSchemas:
+    """Tests for Pydantic schemas and strict JSON schema generation."""
+
+    def test_profile_schema_validates_valid_data(self):
+        data = {
+            "name": "Jane",
+            "education": ["BS CS"],
+            "work_experience": ["Engineer"],
+            "life_experience": ["Lived abroad"],
+            "interests": ["Python"],
+        }
+        profile = ProfileSchema.model_validate(data)
+        assert profile.name == "Jane"
+        assert profile.education == ["BS CS"]
+
+    def test_profile_schema_fills_defaults(self):
+        profile = ProfileSchema.model_validate({})
+        assert profile.name == ""
+        assert profile.education == []
+
+    def test_question_schema_validates_valid_data(self):
+        data = {"text": "What is your approach?", "topic": "skill", "rationale": "Test"}
+        question = QuestionSchema.model_validate(data)
+        assert question.text == "What is your approach?"
+        assert question.topic == QuestionTopic.SKILL
+
+    def test_question_schema_defaults_topic_and_rationale(self):
+        data = {"text": "What is your approach?"}
+        question = QuestionSchema.model_validate(data)
+        assert question.topic == QuestionTopic.GENERAL
+        assert question.rationale == ""
+
+    def test_profile_json_schema_has_strict_properties(self):
+        assert PROFILE_JSON_SCHEMA["additionalProperties"] is False
+        assert set(PROFILE_JSON_SCHEMA["required"]) == {
+            "name",
+            "education",
+            "work_experience",
+            "life_experience",
+            "interests",
+        }
+
+    def test_question_json_schema_has_strict_properties(self):
+        assert QUESTION_JSON_SCHEMA["additionalProperties"] is False
+        assert set(QUESTION_JSON_SCHEMA["required"]) == {"text", "topic", "rationale"}
+        # Topic should have enum values inlined (no $ref)
+        topic_prop = QUESTION_JSON_SCHEMA["properties"]["topic"]
+        assert "enum" in topic_prop
+        assert "$ref" not in topic_prop
+
+    def test_profile_json_schema_no_defaults(self):
+        """OpenAI strict mode doesn't allow 'default' in properties."""
+        for prop in PROFILE_JSON_SCHEMA["properties"].values():
+            assert "default" not in prop
+
+    def test_question_json_schema_no_defaults(self):
+        """OpenAI strict mode doesn't allow 'default' in properties."""
+        for prop in QUESTION_JSON_SCHEMA["properties"].values():
+            assert "default" not in prop

@@ -28,8 +28,9 @@ class AnthropicProvider:
     ) -> str:
         """Single completion. Returns the full response text.
 
-        json_schema is accepted for API compatibility but not used
-        — Anthropic's API doesn't support guided decoding.
+        When json_schema is provided, uses Anthropic's native structured
+        output (output_config with json_schema format) to guarantee the
+        response conforms to the schema.
         """
         kwargs: dict = {
             "model": self._model,
@@ -38,6 +39,8 @@ class AnthropicProvider:
         }
         if system:
             kwargs["system"] = system
+        if json_schema:
+            kwargs["output_config"] = {"format": {"type": "json_schema", "schema": json_schema}}
 
         response = await self._client.messages.create(**kwargs)
         return response.content[0].text

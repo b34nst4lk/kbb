@@ -1,44 +1,9 @@
-"""All prompt templates and JSON schemas for LLM interactions.
+"""All prompt templates for LLM interactions.
 
 Keeping prompts in one place makes them easy to review and iterate on.
-JSON schemas are used by Ollama's guided decoding to force valid output.
+JSON schemas for structured output are defined in kbb.llm.schemas as
+Pydantic models with strict-compatible JSON Schema generation.
 """
-
-# --- JSON Schemas for guided decoding ---
-
-PROFILE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "name": {"type": "string"},
-        "education": {"type": "array", "items": {"type": "string"}},
-        "work_experience": {"type": "array", "items": {"type": "string"}},
-        "life_experience": {"type": "array", "items": {"type": "string"}},
-        "interests": {"type": "array", "items": {"type": "string"}},
-    },
-    "required": ["name", "education", "work_experience", "life_experience", "interests"],
-}
-
-QUESTION_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "text": {"type": "string"},
-        "topic": {
-            "type": "string",
-            "enum": [
-                "education",
-                "work_experience",
-                "life_experience",
-                "skill",
-                "opinion",
-                "decision",
-                "process",
-                "general",
-            ],
-        },
-        "rationale": {"type": "string"},
-    },
-    "required": ["text", "topic", "rationale"],
-}
 
 # --- Prompt templates ---
 

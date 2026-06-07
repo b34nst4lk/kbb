@@ -43,9 +43,9 @@ class OpenAIProvider:
     ) -> str:
         """Single completion. Returns the full response text.
 
-        When json_schema is provided, uses response_format to request
-        JSON output (OpenAI doesn't support schema-guided decoding,
-        but json_object mode improves reliability).
+        When json_schema is provided, uses OpenAI's structured output
+        (response_format with json_schema type) to guarantee the response
+        conforms to the schema with strict validation.
         """
         messages = []
         if system:
@@ -58,7 +58,14 @@ class OpenAIProvider:
             "messages": messages,
         }
         if json_schema:
-            kwargs["response_format"] = {"type": "json_object"}
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "response",
+                    "strict": True,
+                    "schema": json_schema,
+                },
+            }
 
         response = await self._client.chat.completions.create(**kwargs)
         return response.choices[0].message.content or ""
