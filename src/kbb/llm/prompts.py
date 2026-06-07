@@ -3,6 +3,11 @@
 Keeping prompts in one place makes them easy to review and iterate on.
 JSON schemas for structured output are defined in kbb.llm.schemas as
 Pydantic models with strict-compatible JSON Schema generation.
+
+Note: The inline schema descriptions in UNDERSTAND_PROFILE_SYSTEM and
+GENERATE_QUESTION_SYSTEM must be kept in sync with the Pydantic models
+in schemas.py (ProfileSchema and QuestionSchema). If you add or remove
+a field in the schema, update both the Pydantic model and the prompt.
 """
 
 # --- Prompt templates ---
