@@ -29,7 +29,6 @@ src/kbb_web/                # Web adapter (FastAPI + HTMX + Jinja2)
   config.py                 # WebConfig, YAML config loading
   dependencies.py           # FastAPI Depends() for engine, config, templates
   desktop.py                # pywebview wrapper
-  models_web.py             # Pydantic form schemas
   routes/
     pages.py                # Full-page HTML routes
     partials.py              # HTMX partial routes (HTML fragments)
@@ -42,6 +41,8 @@ src/kbb_web/                # Web adapter (FastAPI + HTMX + Jinja2)
 
 **Key pattern**: Core library (`src/kbb/`) never touches I/O directly. Adapters (CLI, web, desktop, upcoming Telegram/Discord) call engine methods and handle presentation.
 
+**Product**: Profile-based Q&A that learns who you are, avoids repeating questions, faithfully records responses (LLM reorganizes but never adds outside info), supports Claude/GPT/Ollama, stores all data as Obsidian-compatible markdown, offers CLI/Web/Desktop interfaces, and supports voice-to-text transcription.
+
 ## LLM Provider Pattern
 
 All three providers implement the `LLMProvider` protocol:
@@ -53,41 +54,26 @@ Structured output uses Pydantic schemas (`ProfileSchema`, `QuestionSchema`) conv
 
 ## Storage Format
 
-All markdown files use YAML frontmatter (Obsidian-compatible). No legacy format support — zero users, no migration needed.
-
-**Knowledge entry** (`knowledge/general/slug.md`):
-```yaml
----
-title: project-stakeholder-management
-topic: process
-source: daily_log
-date: 2026-06-06
-tags: [daily-log, process]
----
-```
-
-**Daily log** (`logs/2026-06-06T21-53-slug.md`): frontmatter with date, topic, slug.
-
-**Aggregate daily note** (`logs/2026-06-06.md`): frontmatter with date, wikilinks to individual logs.
-
-**Pending question** (`pending_question.md`): frontmatter with question, topic, rationale.
+All markdown files use YAML frontmatter (Obsidian-compatible). No legacy format support. Fields: title, topic, source, date, tags (knowledge entries); date, topic, slug (daily logs); question, topic, rationale (pending questions).
 
 ## Development Commands
 
 ```bash
 uv run pytest tests/ -v           # Run all tests
-uv run ruff check src/             # Lint
-uv run ruff format .               # Format (ALWAYS run after changes)
+uv run ruff check .               # Lint (entire codebase including tests)
+uv run ruff format .               # Format
 uv run ty check .                  # Type check
 uv run kbb --data-dir data init    # Initialize data directory
 uv run kbb --data-dir data status  # Show status
 ```
 
+Always run `uv run ruff format .`, `uv run ruff check .`, and `uv run ty check .` as the final step before considering a task done.
+
 ## Coding Standards
 
 - **Python 3.13+** with `from __future__ import annotations` in all files
 - **Type hints** on all public functions; ty checks must pass
-- **Ruff** for linting (line-length 100) and formatting — always run `uv run ruff format .` after changes
+- **Ruff** for linting (line-length 100) and formatting
 - **Pydantic v2** for structured LLM output validation
 - **YAML frontmatter** for all markdown metadata (via `kbb.obsidian.format_frontmatter` / `parse_frontmatter`)
 - **No `try/except ... pass`** without an inline comment explaining why the exception is safe to ignore
@@ -110,52 +96,6 @@ uv run kbb --data-dir data status  # Show status
 - Test file naming: `test_<module>.py` matching `src/<package>/<module>.py`
 - `ty: ignore[too-many-positional-arguments]` on `pytest.skip()` calls (known ty false positive)
 
-## Product Requirements
-
-- **Profile-based**: Learns who you are, tailors questions accordingly
-- **Knowledge-aware**: Avoids repeating questions, builds on existing knowledge
-- **Faithful recording**: LLM reorganizes but NEVER adds outside information to responses
-- **Pluggable LLM**: Claude, GPT, or local models via Ollama
-- **Markdown storage**: All data as human-readable files, Obsidian-compatible
-- **Multiple interfaces**: CLI (Typer), Web (FastAPI+HTMX), Desktop (pywebview), upcoming: Telegram, Discord
-- **Voice-to-text**: Implemented — faster-whisper (default), openai-whisper (MPS), OpenAI API; browser mic recording
-
-## Upcoming Features (Roadmap)
-
-1. ~~**Voice-to-text transcription**~~ — ✅ Implemented in `src/kbb/transcribe.py`
-2. **Telegram bot** (`src/kbb_telegram/`) — push questions, receive text/voice responses
-3. **Discord bot** (`src/kbb_discord/`) — same as Telegram but via DMs
-
-See plan files in `docs/` for detailed implementation plans.
-
 ## Plan Convention
 
-Plans are saved in `docs/` as `NNN_<descriptive_name>.plan.md` where `NNN` is a zero-padded sequence number. Every plan must follow this structure:
-
-```markdown
-# <Title>
-
-## Context and Use Case
-<!-- Why this change is needed, what problem it solves, who it serves -->
-
-## Requirements
-<!-- What the implementation must satisfy — functional and non-functional -->
-
-## Proposals
-<!-- One or more approaches considered, with tradeoffs -->
-
-## Technical Solutions
-<!-- Chosen approach with detailed design: new modules, classes, data flow, API changes -->
-
-## Task List and Test Cases
-<!-- TDD-format checklist. Each item names the class/function, its signature,
-     expected behavior, and a test describing initial conditions + assertions.
-     Use markdown checkboxes. -->
-
-- [ ] **`module.Class.method(self, arg: type) -> RetType`**
-  Expected behavior: …
-  - [ ] `test_method_does_x_when_y`: Given …, asserts …
-  - [ ] `test_method_raises_on_bad_z`: Given …, asserts …
-```
-
-All sections are required. Task items must include function signatures and test cases with explicit initial conditions and assertions.
+Plans are saved in `docs/` as `NNN_<descriptive_name>.plan.md`. See `memory/plan-convention.md` for the required section structure and TDD task list format.
