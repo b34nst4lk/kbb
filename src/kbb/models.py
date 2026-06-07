@@ -1,5 +1,3 @@
-"""Core data models for Knowledge Base Builder."""
-
 from __future__ import annotations
 
 import re
@@ -147,28 +145,10 @@ class DailyLog:
     slug: str = ""
 
     def to_markdown(self) -> str:
-        """Serialize this daily log to markdown with Obsidian-compatible frontmatter.
+        """Format contract: ``_parse_daily_log`` must parse this exact layout.
 
-        Format contract — ``_parse_daily_log`` must parse this exact layout:
-
-            ---
-            date: 2026-06-06
-            topic: skill
-            slug: some-slug
-            ---
-            # Daily Log — 2026-06-06 14:30
-
-            **Question** (skill): What testing framework?
-
-            **Rationale**: Testing experience
-
-            ## Response
-
-            I prefer pytest.
-
-            ## Recorded Knowledge
-
-            Prefers pytest for testing.
+        YAML frontmatter (date, topic, slug), H1 heading, **Question** (topic),
+        **Rationale**, ## Response, ## Recorded Knowledge.
         """
         from kbb.obsidian import format_frontmatter
 

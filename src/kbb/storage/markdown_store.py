@@ -1,8 +1,3 @@
-"""Markdown file storage for knowledge base data.
-
-All files use YAML frontmatter for Obsidian compatibility.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -24,7 +19,6 @@ class MarkdownStore:
         self._ensure_dirs()
 
     def _ensure_dirs(self) -> None:
-        """Create directory structure if it doesn't exist."""
         for subdir in [
             "knowledge/education",
             "knowledge/work",
@@ -40,19 +34,16 @@ class MarkdownStore:
     # --- Profile ---
 
     def read_profile(self) -> str:
-        """Read the raw profile markdown."""
         path = self._data_dir / "profile.md"
         if not path.exists():
             return ""
         return path.read_text()
 
     def write_profile(self, content: str) -> None:
-        """Write the raw profile markdown."""
         path = self._data_dir / "profile.md"
         path.write_text(content)
 
     def read_structured_profile(self) -> UserProfile:
-        """Read the auto-generated structured profile."""
         path = self._data_dir / "profile_structured.md"
         if not path.exists():
             return UserProfile()
@@ -60,14 +51,12 @@ class MarkdownStore:
         return self._parse_structured_profile(text)
 
     def write_structured_profile(self, profile: UserProfile) -> None:
-        """Write the structured profile (auto-generated from LLM output)."""
         path = self._data_dir / "profile_structured.md"
         path.write_text(self._format_structured_profile(profile))
 
     # --- Knowledge ---
 
     def list_knowledge_entries(self) -> list[KnowledgeEntry]:
-        """Scan all knowledge markdown files and return entries."""
         entries: list[KnowledgeEntry] = []
         knowledge_dir = self._data_dir / "knowledge"
         if not knowledge_dir.exists():
@@ -165,7 +154,6 @@ class MarkdownStore:
         )
 
     def read_daily_log(self, path: Path) -> DailyLog | None:
-        """Read a daily log by file path."""
         if not path.exists():
             return None
         return self._parse_daily_log(path)
@@ -302,7 +290,6 @@ class MarkdownStore:
         path.write_text(f"{frontmatter}\n# Pending Question\n")
 
     def clear_pending_question(self) -> None:
-        """Remove the pending question file after it's been answered."""
         path = self._data_dir / "pending_question.md"
         if path.exists():
             path.unlink()
@@ -310,7 +297,6 @@ class MarkdownStore:
     # --- Knowledge Import ---
 
     def import_markdown_file(self, source_path: Path, topic: QuestionTopic) -> KnowledgeEntry:
-        """Import an external markdown file as a knowledge entry."""
         content = source_path.read_text()
         entry = KnowledgeEntry(
             title=source_path.stem.replace("-", " ").replace("_", " ").title(),
@@ -334,7 +320,6 @@ class MarkdownStore:
         return slugify(text)
 
     def _parse_structured_profile(self, text: str) -> UserProfile:
-        """Parse structured profile markdown into UserProfile."""
         profile = UserProfile(raw_markdown=text)
 
         current_section: str | None = None
@@ -381,7 +366,6 @@ class MarkdownStore:
         return profile
 
     def _format_structured_profile(self, profile: UserProfile) -> str:
-        """Format UserProfile as markdown."""
         lines: list[str] = []
         if profile.name:
             lines.append(f"# Profile: {profile.name}\n")
@@ -410,7 +394,6 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_knowledge_entry(self, path: Path) -> KnowledgeEntry:
-        """Parse a knowledge entry from markdown with YAML frontmatter."""
         text = path.read_text()
         topic_name = path.parent.name
         topic = QuestionTopic.from_directory(topic_name)
@@ -443,7 +426,6 @@ class MarkdownStore:
         )
 
     def _format_knowledge_entry(self, entry: KnowledgeEntry) -> str:
-        """Format a knowledge entry as markdown with Obsidian-compatible frontmatter."""
         frontmatter = format_frontmatter(
             {
                 "title": entry.title,
@@ -457,17 +439,9 @@ class MarkdownStore:
         return "\n".join(lines)
 
     def _parse_daily_log(self, path: Path) -> DailyLog:
-        """Parse a daily log from markdown with YAML frontmatter.
+        """Parse a daily log. Expected format matches ``DailyLog.to_markdown()`` output.
 
-        Expected format — must match the output of ``DailyLog.to_markdown()``:
-        - YAML frontmatter with ``date``, ``topic``, ``slug`` fields
-        - H1 heading: ``# Daily Log — YYYY-MM-DD HH:MM``
-        - ``**Question** (topic): text``
-        - ``**Rationale**: text``
-        - ``## Response`` section
-        - ``## Recorded Knowledge`` section
-
-        When frontmatter is missing, a warning is logged and defaults are used.
+        Logs a warning on missing frontmatter and uses defaults.
         """
         text = path.read_text()
 

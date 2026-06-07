@@ -1,5 +1,3 @@
-"""Anthropic (Claude) LLM provider."""
-
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
