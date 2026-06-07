@@ -18,7 +18,13 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from kbb.engine import KBPEngine
-from kbb.models import KBBConfig, LLMProviderName, QuestionTopic, TranscriptionProviderName
+from kbb.models import (
+    KBBConfig,
+    LLMProviderName,
+    Question,
+    QuestionTopic,
+    TranscriptionProviderName,
+)
 
 app = typer.Typer(
     name="kbb",
@@ -42,6 +48,19 @@ def main(
 ) -> None:
     """Knowledge Base Builder — extract and document your knowledge on a schedule."""
     _state["data_dir"] = data_dir
+
+
+def _get_question(engine: KBPEngine) -> Question:
+    """Get a pending question or generate a new one.
+
+    Returns a Question, or exits the CLI on error.
+    """
+    pending = engine.get_pending_question()
+    if pending:
+        console.print("[dim]Using previously generated question.[/dim]")
+        return pending
+    with console.status("[bold green]Generating today's question...[/bold green]"):
+        return asyncio.run(engine.generate_daily_question())
 
 
 def _resolve_api_key(provider: LLMProviderName, explicit_key: str = "") -> str:
@@ -266,21 +285,14 @@ def daily_question() -> None:
     """Generate and display today's question."""
     engine = _get_engine()
 
-    # Check for an existing pending question first
-    pending = engine.get_pending_question()
-    if pending:
-        console.print("[dim]Using previously generated question.[/dim]")
-        question = pending
-    else:
-        try:
-            with console.status("[bold green]Generating today's question...[/bold green]"):
-                question = asyncio.run(engine.generate_daily_question())
-        except ValueError as e:
-            console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1)
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Cancelled.[/yellow]")
-            raise typer.Exit(1)
+    try:
+        question = _get_question(engine)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Cancelled.[/yellow]")
+        raise typer.Exit(1)
 
     console.print(
         Panel(
@@ -298,21 +310,14 @@ def daily_respond() -> None:
     """Generate a question and record your response."""
     engine = _get_engine()
 
-    # Check for an existing pending question first
-    pending = engine.get_pending_question()
-    if pending:
-        console.print("[dim]Using previously generated question.[/dim]")
-        question = pending
-    else:
-        try:
-            with console.status("[bold green]Generating today's question...[/bold green]"):
-                question = asyncio.run(engine.generate_daily_question())
-        except ValueError as e:
-            console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1)
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Cancelled.[/yellow]")
-            raise typer.Exit(1)
+    try:
+        question = _get_question(engine)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Cancelled.[/yellow]")
+        raise typer.Exit(1)
 
     console.print(
         Panel(
@@ -419,18 +424,11 @@ def daily_respond_voice(
     """Transcribe an audio file and record the response to today's question."""
     engine = _get_engine()
 
-    # Check for pending question or generate one
-    pending = engine.get_pending_question()
-    if pending:
-        console.print("[dim]Using previously generated question.[/dim]")
-        question = pending
-    else:
-        try:
-            with console.status("[bold green]Generating today's question...[/bold green]"):
-                question = asyncio.run(engine.generate_daily_question())
-        except ValueError as e:
-            console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1)
+    try:
+        question = _get_question(engine)
+    except ValueError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
 
     console.print(
         Panel(
