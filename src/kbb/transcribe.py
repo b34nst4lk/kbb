@@ -230,18 +230,12 @@ def _create_provider(
     """
     match provider_type:
         case "faster-whisper":
-            from kbb.transcribe import FasterWhisperProvider
-
             return FasterWhisperProvider(model=model, device=device, compute_type=compute_type)
         case "whisper":
-            from kbb.transcribe import WhisperProvider
-
             return WhisperProvider(model=model, device=device)
         case "openai":
             if not api_key:
                 raise ValueError("OpenAI transcription requires an API key.")
-            from kbb.transcribe import OpenAITranscriptionProvider
-
             return OpenAITranscriptionProvider(api_key=api_key, model=model)
         case _:
             raise ValueError(
